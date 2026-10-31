@@ -1,0 +1,14 @@
+# mídia e modelos nunca entram no git
+*.mov
+*.mp4
+*.m4v
+*.mkv
+*.wav
+*.mp3
+*.onnx
+*.tar.bz2
+models/
+render*/
+work/
+.DS_Store
+__pycache__/

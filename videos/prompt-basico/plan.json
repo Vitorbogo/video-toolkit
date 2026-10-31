@@ -1,0 +1,413 @@
+[
+ {
+  "s": 0,
+  "e": 4.144,
+  "ev": [
+   [
+    0.0,
+    1.85231,
+    "Você já recebeu um trabalho de estagiário"
+   ],
+   [
+    2.32281,
+    3.9235,
+    "completamente fora do que você pediu?"
+   ]
+  ]
+ },
+ {
+  "s": 5.66,
+  "e": 8.511,
+  "ev": [
+   [
+    0.15000000000000036,
+    2.63131,
+    "Com a IA é exatamente a mesma coisa."
+   ]
+  ]
+ },
+ {
+  "s": 13.325,
+  "e": 54.68,
+  "ev": [
+   [
+    0.15000000000000036,
+    3.8447999999999993,
+    "Quando você faz um bom prompt, ele precisa de certos elementos, como..."
+   ],
+   [
+    4.611599999999999,
+    8.493100000000002,
+    "o papel, o contexto, a tarefa e o formato."
+   ],
+   [
+    9.319700000000001,
+    11.181000000000001,
+    "Qual vai ser o papel da IA"
+   ],
+   [
+    12.348600000000001,
+    13.2455,
+    "nesse contexto?"
+   ],
+   [
+    14.2133,
+    17.2851,
+    "Quem a IA deve ser naquele momento."
+   ],
+   [
+    18.2588,
+    19.935299999999998,
+    "Isso nem sempre é necessário."
+   ],
+   [
+    20.4531,
+    26.3643,
+    "Algumas vezes elas conseguem entender isso automaticamente."
+   ],
+   [
+    26.878,
+    30.585100000000004,
+    "O contexto: o que ela não sabe, o que ela precisa saber."
+   ],
+   [
+    33.4813,
+    37.4828,
+    "...consegue ler coisas no seu computador."
+   ],
+   [
+    38.365,
+    41.1349,
+    "Talvez ela consiga procurar esse contexto pra ti."
+   ]
+  ]
+ },
+ {
+  "s": 59.215,
+  "e": 62.566,
+  "ev": [
+   [
+    0.14999999999999858,
+    3.131699999999995,
+    "Na maioria dos casos, ela precisa saber disso."
+   ]
+  ]
+ },
+ {
+  "s": 65.377,
+  "e": 79.32,
+  "ev": [
+   [
+    0.15000000000000568,
+    6.3577999999999975,
+    "você dar essa documentação, esse contexto a mais,"
+   ],
+   [
+    6.934799999999996,
+    8.8232,
+    "é extremamente fundamental."
+   ],
+   [
+    9.701999999999998,
+    13.722899999999996,
+    "E existem formas para você fazer isso, que a gente vai ver em outros vídeos."
+   ]
+  ]
+ },
+ {
+  "s": 102.826,
+  "e": 115.072,
+  "ev": [
+   [
+    0.15000000000000568,
+    4.352000000000004,
+    "E a tarefa, sem ambiguidade. O que você quer que ela faça?"
+   ],
+   [
+    5.407000000000011,
+    9.572000000000003,
+    "Ela já sabe o papel dela, ela já sabe o contexto. Agora, o que ela tem que fazer"
+   ],
+   [
+    10.129000000000005,
+    12.02600000000001,
+    "para entregar aquilo que você precisa."
+   ]
+  ]
+ },
+ {
+  "s": 117.005,
+  "e": 125.442,
+  "ev": [
+   [
+    0.15000000000000568,
+    8.216999999999999,
+    "Qual vai ser o formato da tua resposta? Aí ela precisa fazer um slide, um PDF. Ela precisa que você..."
+   ]
+  ]
+ },
+ {
+  "s": 126.443,
+  "e": 132.067,
+  "ev": [
+   [
+    0.15000000000000568,
+    1.507000000000005,
+    "retorne uma tabela."
+   ],
+   [
+    2.2310000000000088,
+    5.404000000000011,
+    "Existem muitas coisas que precisam ser consideradas."
+   ]
+  ]
+ },
+ {
+  "s": 134.303,
+  "e": 136.972,
+  "ev": [
+   [
+    0.15000000000000568,
+    2.4490000000000123,
+    "Estou com um contrato, peço para resumir."
+   ]
+  ]
+ },
+ {
+  "s": 190.825,
+  "e": 200.893,
+  "ev": [
+   [
+    0.15000000000000568,
+    3.5430000000000064,
+    "Para um prompt vago, “resume esse contrato”."
+   ],
+   [
+    4.233000000000004,
+    9.848000000000013,
+    "Pode ser que os resultados desse prompt vago sejam bons, mas você não sabe."
+   ]
+  ]
+ },
+ {
+  "s": 202.041,
+  "e": 218.224,
+  "ev": [
+   [
+    0.15000000000000568,
+    1.7479999999999905,
+    "Qual vai ser o resultado?"
+   ],
+   [
+    2.491000000000014,
+    10.012,
+    "Se você vai ter no seu formato certo, se ele vai ter o contexto certo e se ele vai estar atuando da forma como você gostaria."
+   ],
+   [
+    10.558999999999997,
+    14.673000000000002,
+    "Agora, se a gente for estruturar de uma forma um pouco mais..."
+   ]
+  ]
+ },
+ {
+  "s": 219.21,
+  "e": 248.559,
+  "ev": [
+   [
+    0.15000000000000568,
+    2.2309999999999945,
+    "Você é um advogado especialista em contratos"
+   ],
+   [
+    2.667999999999978,
+    3.7920000000000016,
+    "empresariais."
+   ],
+   [
+    4.514999999999986,
+    7.550999999999988,
+    "Vou te enviar um contrato de prestação de serviços."
+   ],
+   [
+    8.512,
+    9.95399999999998,
+    "Meu cliente é o contratante."
+   ],
+   [
+    10.891999999999996,
+    13.138999999999982,
+    "Quero um resumo executivo com:"
+   ],
+   [
+    14.013000000000005,
+    16.619,
+    "1. Objeto do contrato; obrigações"
+   ],
+   [
+    17.073999999999984,
+    23.60899999999998,
+    "principais de cada parte; cláusulas de rescisão; pontos de atenção ou riscos para o contratante."
+   ],
+   [
+    24.655,
+    29.12899999999999,
+    "Use linguagem direta, sem jargão técnico: esse resumo vai para o cliente, não para mim."
+   ]
+  ]
+ },
+ {
+  "s": 249.479,
+  "e": 253.164,
+  "ev": [
+   [
+    0.15000000000000568,
+    3.4650000000000034,
+    "Então você tem o papel, o contexto, a tarefa e o formato aqui."
+   ]
+  ]
+ },
+ {
+  "s": 254.323,
+  "e": 259.874,
+  "ev": [
+   [
+    0.15000000000000568,
+    1.914999999999992,
+    "Algumas dessas informações"
+   ],
+   [
+    2.7569999999999766,
+    5.330999999999989,
+    "podem ser inferidas."
+   ]
+  ]
+ },
+ {
+  "s": 264.711,
+  "e": 272.165,
+  "ev": [
+   [
+    0.14999999999997726,
+    1.3029999999999973,
+    "Por exemplo,"
+   ],
+   [
+    2.2539999999999623,
+    7.2339999999999804,
+    "que o documento enviado é um contrato de prestação de serviços"
+   ]
+  ]
+ },
+ {
+  "s": 273.335,
+  "e": 290.815,
+  "ev": [
+   [
+    0.14999999999997726,
+    2.2329999999999472,
+    "e que você é o contratante."
+   ],
+   [
+    3.2889999999999873,
+    4.70799999999997,
+    "o cliente ou o contratante"
+   ],
+   [
+    5.482999999999947,
+    7.0429999999999495,
+    "e você é o contratado."
+   ],
+   [
+    8.154999999999973,
+    12.635999999999967,
+    "Agora, a parte da tarefa é a mais importante,"
+   ],
+   [
+    13.482999999999947,
+    17.25999999999999,
+    "porque você está detalhando as coisas que você precisa."
+   ]
+  ]
+ },
+ {
+  "s": 293.259,
+  "e": 300.849,
+  "ev": [
+   [
+    0.14999999999997726,
+    2.8559999999999945,
+    "E como isso vai ser usado: o formato."
+   ],
+   [
+    3.56899999999996,
+    7.3700000000000045,
+    "Então, quando você fala que o resumo vai para o cliente, não para mim,"
+   ]
+  ]
+ },
+ {
+  "s": 302.938,
+  "e": 312.647,
+  "ev": [
+   [
+    0.14999999999997726,
+    2.308999999999969,
+    "tá falando pra IA algumas coisas"
+   ],
+   [
+    2.759999999999934,
+    5.2859999999999445,
+    "que precisam ser mais claras, ou"
+   ],
+   [
+    5.967999999999961,
+    9.488999999999976,
+    "talvez que algumas coisas precisam ser omitidas."
+   ]
+  ]
+ },
+ {
+  "s": 316.637,
+  "e": 326.62,
+  "ev": [
+   [
+    0.14999999999997726,
+    1.7069999999999936,
+    "Não é mais difícil de escrever."
+   ],
+   [
+    2.194999999999993,
+    9.762999999999977,
+    "É apenas mais pensado. E conforme passa o tempo e você faz alguns desses, vai ficar extremamente natural."
+   ]
+  ]
+ },
+ {
+  "s": 333.29,
+  "e": 338.083,
+  "ev": [
+   [
+    0.14999999999997726,
+    4.572999999999979,
+    "Escreva dois prompts para a mesma tarefa e você vai ver as diferenças do resultado."
+   ]
+  ]
+ },
+ {
+  "s": 339.052,
+  "e": 353.43,
+  "ev": [
+   [
+    0.14999999999997726,
+    2.4319999999999595,
+    "O mais simples possível, como “resuma algo”."
+   ],
+   [
+    3.187999999999988,
+    14.157999999999959,
+    "Você pode fazer isso mais de uma vez, você vai ver que os resultados vão ser diferentes. Claro, o resultado do segundo também vai ser diferente, mas muito mais conciso e seguindo a mesma lógica."
+   ]
+  ]
+ }
+]

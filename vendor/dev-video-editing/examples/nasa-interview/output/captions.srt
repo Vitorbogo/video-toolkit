@@ -1,0 +1,478 @@
+1
+00:00:03,743 --> 00:00:08,417
+So in my job as the spacecraft science
+phase lead, I get to work hand-in-hand with
+
+2
+00:00:08,483 --> 00:00:13,337
+the scientists and the navigation team to
+plan out this mission and how OSIRIS-REx
+
+3
+00:00:13,403 --> 00:00:14,937
+is going to execute this.
+
+4
+00:00:15,003 --> 00:00:17,597
+For me, personally,
+this is an ideal combination.
+
+5
+00:00:17,663 --> 00:00:21,037
+I've always loved deep space
+exploration and the science behind it.
+
+6
+00:00:21,103 --> 00:00:25,057
+So I get to work one-on-one with the science
+teams to identify really what their
+
+7
+00:00:25,123 --> 00:00:28,277
+science goal is and translate that for the
+spacecraft team to something that we can
+
+8
+00:00:28,343 --> 00:00:32,437
+actually execute piece by piece as the
+spacecraft goes through its commanding.
+
+9
+00:00:32,503 --> 00:00:33,543
+So,
+
+10
+00:00:37,220 --> 00:00:41,093
+one of the challenges that OSIRIS-REx has
+been facing is the microgravity environment
+
+11
+00:00:41,160 --> 00:00:43,393
+that we are in when we orbit Bennu.
+
+12
+00:00:43,460 --> 00:00:46,653
+We don't have the strong pull
+of gravity below us, so instead,
+
+13
+00:00:46,720 --> 00:00:50,613
+the non-gravitational forces in the spacecraft
+affect our trajectory a lot more than
+
+14
+00:00:50,680 --> 00:00:51,713
+what we're used to.
+
+15
+00:00:51,780 --> 00:00:54,693
+So over the course of a few weeks,
+we could end up on a number of different
+
+16
+00:00:54,760 --> 00:00:59,373
+trajectories, and that means our uncertainty
+in planning and our responsibility to
+
+17
+00:00:59,440 --> 00:01:01,813
+keep the spacecraft safe
+is very challenging.
+
+18
+00:01:01,880 --> 00:01:05,753
+So, we have to constantly update
+our pointing on board the spacecraft,
+
+19
+00:01:05,820 --> 00:01:08,653
+both for maneuvers
+and for science-pointing purposes,
+
+20
+00:01:08,720 --> 00:01:12,513
+and we have to constantly reanalyze the
+sun angles on the spacecraft to make sure
+
+21
+00:01:12,580 --> 00:01:16,333
+that the power and thermal and telecom
+attitudes are safe for the spacecraft to
+
+22
+00:01:16,400 --> 00:01:17,400
+navigate.
+
+23
+00:01:20,733 --> 00:01:24,427
+So, when we're orbiting around Bennu,
+the force of gravity on the spacecraft is
+
+24
+00:01:24,493 --> 00:01:28,587
+about one millionth what the force
+of gravity at Mars is for our spacecraft.
+
+25
+00:01:28,653 --> 00:01:32,067
+So, that's a significant change
+in the forces that spacecraft feels,
+
+26
+00:01:32,133 --> 00:01:34,247
+and it That means
+that the non-gravitational forces,
+
+27
+00:01:34,313 --> 00:01:38,727
+such as solar radiation pressure,
+are within the magnitude of gravity,
+
+28
+00:01:38,793 --> 00:01:41,553
+which is a very new environment
+for us to be operating in.
+
+29
+00:01:45,587 --> 00:01:49,540
+So OsirisRx comes with an instrument suite
+that was uniquely designed to observe the
+
+30
+00:01:49,607 --> 00:01:50,360
+asteroid.
+
+31
+00:01:50,427 --> 00:01:54,380
+But the spacecraft itself was also
+designed to observe this asteroid.
+
+32
+00:01:54,447 --> 00:01:58,540
+Our science mission requires us to observe
+and map all over the surface of the
+
+33
+00:01:58,607 --> 00:02:01,087
+asteroid under a number
+of different conditions.
+
+34
+00:02:01,407 --> 00:02:04,820
+To support that, all of our subsystems
+have been tuned for this purpose.
+
+35
+00:02:04,887 --> 00:02:09,340
+So, our solar arrays are gimbaled so we can
+continue to keep a power positive margin
+
+36
+00:02:09,407 --> 00:02:13,080
+as we look at different sun angles and
+different sites around the surface of the
+
+37
+00:02:13,147 --> 00:02:14,020
+asteroid.
+
+38
+00:02:14,087 --> 00:02:18,100
+Our thruster suites, we have very low
+thrust engines that allow us to do very tiny
+
+39
+00:02:18,167 --> 00:02:21,160
+precision pointing maneuvers
+around the asteroid.
+
+40
+00:02:21,227 --> 00:02:25,300
+On board, our software, for instance,
+has a targeting software that allows us to
+
+41
+00:02:25,367 --> 00:02:28,820
+load up a list of targets from the science
+teams and tell the spacecraft to execute
+
+42
+00:02:28,887 --> 00:02:32,260
+them autonomously as it maps
+out the surface of Bennu for us.
+
+43
+00:02:32,327 --> 00:02:36,360
+And additionally, we have an engineering
+camera, which we use to support the optical
+
+44
+00:02:36,427 --> 00:02:38,327
+navigation that this mission needs.
+
+45
+00:02:41,693 --> 00:02:45,047
+So before launch, we expected that the
+surface of Bennu would be covered in a
+
+46
+00:02:45,113 --> 00:02:48,987
+fine-grain material, much like the lunar
+regolith on the surface of the moon.
+
+47
+00:02:49,053 --> 00:02:53,607
+This was supported by the observations
+that the science teams had done of Bennu
+
+48
+00:02:53,673 --> 00:02:54,587
+before launch.
+
+49
+00:02:54,653 --> 00:02:59,667
+They used ground-based astronomy, radio
+astronomy, and infrared imaging to deduce
+
+50
+00:02:59,733 --> 00:03:02,567
+the thermal inertia
+of the surface material on Bennu.
+
+51
+00:03:02,633 --> 00:03:07,427
+When we got to Bennu, we found to our surprise
+that instead it's covered in a lot of
+
+52
+00:03:07,493 --> 00:03:10,847
+rocky material and it's a much rougher
+surface than we were expecting.
+
+53
+00:03:10,913 --> 00:03:15,247
+We've had to adapt our science plan and
+our sample acquisition plan to this new
+
+54
+00:03:15,313 --> 00:03:17,193
+rocky surface of Bennu instead.
+
+55
+00:03:20,390 --> 00:03:24,963
+Before launch, we had developed two
+methods to guide ourselves in for TAG.
+
+56
+00:03:25,030 --> 00:03:29,963
+We had a primary method which was to use
+our LiDAR to do ranging acquisition as we
+
+57
+00:03:30,030 --> 00:03:32,243
+approach the TAG site
+and guide ourselves in.
+
+58
+00:03:32,310 --> 00:03:35,323
+And that was our primary method that we
+did the majority of our development on.
+
+59
+00:03:35,390 --> 00:03:38,973
+We developed a backup method
+using natural feature tracking,
+
+60
+00:03:39,040 --> 00:03:42,953
+which is an optical navigation used
+on board autonomously to image the site,
+
+61
+00:03:43,020 --> 00:03:45,570
+compare it to a catalog,
+and guide ourselves in.
+
+62
+00:03:45,637 --> 00:03:50,270
+When we got to Bennu, the rocky surface of
+Bennu really changed our entire approach
+
+63
+00:03:50,337 --> 00:03:51,470
+to TAG.
+
+64
+00:03:51,537 --> 00:03:56,230
+Originally, we had expected to be able to
+find a 25-meter radius site that could be
+
+65
+00:03:56,297 --> 00:04:00,550
+safe to TAG in, that would be full of this
+fine-grained material and wouldn't have
+
+66
+00:04:00,617 --> 00:04:03,390
+uneven surfaces that could be
+dangerous for the spacecraft.
+
+67
+00:04:03,457 --> 00:04:04,230
+Draft.
+
+68
+00:04:04,297 --> 00:04:07,750
+Unfortunately, Benu did not know
+about our expectations for it.
+
+69
+00:04:07,817 --> 00:04:11,450
+And when we got there, we found that there
+weren't sites large enough to meet that
+
+70
+00:04:11,517 --> 00:04:12,460
+need.
+
+71
+00:04:12,527 --> 00:04:16,700
+Without that large site, the LiDAR approach
+could no longer support the increased
+
+72
+00:04:16,767 --> 00:04:18,320
+performance that we needed.
+
+73
+00:04:18,387 --> 00:04:22,580
+And the natural feature tracking with its
+higher precision targeting could get us to
+
+74
+00:04:22,647 --> 00:04:27,787
+a site that was smaller and could fit
+within the smaller smooth surfaces of Benu.
+
+75
+00:04:31,827 --> 00:04:35,200
+So we've just completed our match point
+rehearsal and we got to see a second
+
+76
+00:04:35,267 --> 00:04:40,620
+demonstration of how well NFT has
+been used to predict our tag profile.
+
+77
+00:04:40,687 --> 00:04:45,180
+And in our last rehearsal, we saw NFT
+come in within two meters of the tag site,
+
+78
+00:04:45,247 --> 00:04:46,080
+which is really impressive.
+
+79
+00:04:46,147 --> 00:04:50,520
+You consider that our original design was
+to come within 25 meters of a tag site.
+
+80
+00:04:50,587 --> 00:04:55,320
+So NFTs on board performance and the tuning
+that our ground team has done to perfect
+
+81
+00:04:55,387 --> 00:04:59,900
+NFT over the last few years has allowed
+us to get an order of magnitude better
+
+82
+00:04:59,967 --> 00:05:02,420
+performance out of the spacecraft
+than it was designed for.
+
+83
+00:05:02,487 --> 00:05:06,160
+And that's what we need to be able to tag
+successfully on this small tag site that
+
+84
+00:05:06,227 --> 00:05:07,487
+Bennu has for us.
+
+85
+00:05:11,327 --> 00:05:15,420
+For me, the most exciting part about
+OSIRIS-REx has been the same thing that caused
+
+86
+00:05:15,487 --> 00:05:16,140
+the challenges.
+
+87
+00:05:16,207 --> 00:05:20,050
+It's the dynamic nature of this mission
+and how much we are dependent on what we
+
+88
+00:05:20,117 --> 00:05:21,970
+learn from the asteroid.
+
+89
+00:05:22,037 --> 00:05:25,610
+Every few weeks, our trajectory has to
+change, and we're having to redesign the
+
+90
+00:05:25,677 --> 00:05:29,590
+mission as we fly it, which gives us a whole
+new challenge for mission operations we
+
+91
+00:05:29,657 --> 00:05:31,130
+haven't had before.
+
+92
+00:05:31,197 --> 00:05:34,410
+Traditionally, in mission operations
+from a spacecraft engineer point of view,
+
+93
+00:05:34,477 --> 00:05:38,750
+we operate the spacecraft, and we don't
+always see the results data we're taking for
+
+94
+00:05:38,817 --> 00:05:39,897
+a long time.
+
+95
+00:05:40,327 --> 00:05:43,840
+On Bennu, the science observations and
+the results we're getting out of that feed
+
+96
+00:05:43,907 --> 00:05:47,740
+right back into the spacecraft trajectory
+and our overall proximity operations
+
+97
+00:05:47,807 --> 00:05:48,840
+phase.
+
+98
+00:05:48,907 --> 00:05:52,940
+So we get to see firsthand what we're
+learning about this asteroid with the science
+
+99
+00:05:53,007 --> 00:05:56,220
+teams, which has been a really rewarding
+experience for our team and for me
+
+100
+00:05:56,287 --> 00:05:57,287
+personally.
+

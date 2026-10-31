@@ -1,0 +1,45 @@
+{
+  "name": "tiktok-vertical",
+  "descricao": "Gravação de tela com janela da câmera à direita e slide à esquerda -> 9:16 com rosto em cima, slide no meio, legenda embaixo.",
+  "canvas": { "w": 1080, "h": 1920, "fps": 30, "bg": "0x141B2D" },
+  "source": {
+    "_nota": "crop = largura:altura:x:y na gravação original (2518x1726). MEDIR DE NOVO se as janelas mudarem de lugar.",
+    "camera_crop": [1231, 692, 1287, 461],
+    "slide_crop": [1157, 1115, 0, 430]
+  },
+  "layout": {
+    "camera": { "y": 120, "h": 607 },
+    "slide": { "x": 99, "y": 745, "w": 882, "h": 850 }
+  },
+  "cut": {
+    "silence_noise_db": -35,
+    "silence_min_s": 0.4,
+    "lead_pad_s": 0.15,
+    "tail_pad_s": 0.22,
+    "keep_natural_gap_under_s": 1.2,
+    "audio_fade_in_s": 0.02,
+    "audio_fade_out_s": 0.03
+  },
+  "subtitles": {
+    "font": "Liberation Sans", "fontsdir": "/usr/share/fonts/truetype/liberation2",
+    "size": 60, "bold": true, "outline": 5, "margin_v": 140,
+    "max_chars_per_line": 30, "max_chars_per_event": 60,
+    "primary": "&H00FFFFFF", "outline_color": "&H00281B14"
+  },
+  "audio": {
+    "_nota": "medido no 1o video: voz ~-24 dB, fundo ~-61 dB, 37 dB de folga. Reducao de ruido LEVE de proposito.",
+    "highpass_hz": 80,
+    "denoise": { "enabled": true, "nr_db": 6, "noise_floor_db": -60 },
+    "compressor": { "threshold_linear": 0.04, "ratio": 4, "attack_ms": 10, "release_ms": 150, "makeup": 1 },
+    "pre_limiter": 0.5,
+    "loudnorm": { "I": -14, "TP": -1.5, "LRA": 11 },
+    "limiter": 0.84,
+    "bitrate": "160k"
+  },
+  "camera_filter": {
+    "_nota": "tratamento de imagem so da camera. 'off' = nenhum. Escolher olhando antes/depois.",
+    "mode": "natural",
+    "off": "",
+    "natural": "hqdn3d=1.5:1.5:3:3,eq=contrast=1.07:brightness=0.02:saturation=1.10:gamma=0.98,unsharp=5:5:0.35:5:5:0.0"
+  }
+}
