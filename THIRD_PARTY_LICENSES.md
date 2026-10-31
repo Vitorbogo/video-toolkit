@@ -17,3 +17,8 @@ e o texto da licença original são mantidos junto de cada cópia.
 - Licença: MIT
 - Não há código dele neste repositório. Se algum dia for copiado, incluir aqui o aviso de
   direitos autorais e o texto da licença original.
+
+## Poppins — fonte usada nas capas
+
+- Arquivos: `vendor/dev-video-editing/fonts/Poppins-*.ttf`
+- Licença: SIL Open Font License 1.1 (`vendor/dev-video-editing/fonts/OFL-Poppins.txt`)
