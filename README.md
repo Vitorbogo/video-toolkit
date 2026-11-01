@@ -11,7 +11,8 @@ Tudo roda local, só com ffmpeg e Python. Receita e decisões estão no vault do
 | `vendor/dev-video-editing/` | Skill de terceiros (MIT), **sem modificações**. Decide cortes com tempo por palavra, enchimentos, repetições, punch-ins. Ver `VENDOR.md`. |
 | `src/vtk/` | Nossos scripts: `seg.py`, `transcribe_words.py` (tempo por palavra, gratis), `transcribe_sherpa.py` (por trecho, antigo), `render.py`, `postaudio.py`, `thumb.py`, `publish.py` (metadados de publicação). |
 | `models/` | Modelo de transcricao (487 MB), **fora do git**. Ver abaixo.  |
-| `presets/` | Parâmetros por formato (layout, corte, legenda, áudio, imagem) e limites das plataformas (`publish.json`). |
+| `presets/` | Parâmetros por formato (layout, corte, legenda, áudio, imagem), enchimentos em português (`fillers-pt.json`) e limites das plataformas (`publish.json`). |
+| `tests/` | Testes (`python3 -m unittest discover tests`). |
 | `.claude/` | `skills/publicar-video` (como escrever os metadados) e `hooks/guard.py` (bloqueia mídia no git, apagar `.mov`, API paga). |
 | `videos/<nome>/` | Transcrição, lista de cortes e legendas de cada vídeo. **Sem mídia.** |
 
@@ -50,9 +51,9 @@ Imagem da câmera: `--camera-filter off|natural` no `render.py` (padrão do pres
 - [x] Capas 9:16 e 16:9 determinísticas (`thumb.py`), com quadro próprio por formato
 - [x] Cópia da skill da DEV Community, sem alterações
 - [ ] Ligar a skill de terceiros ao `render.py` (cortes com tempo por palavra e bordas ajustadas pelo áudio)
-- [ ] Lista de enchimentos em português (né, tipo, então, ééé)
+- [x] Lista de enchimentos em português (`presets/fillers-pt.json`; por enquanto copiada à mão para o `edit.json`, ver `_nota`)
 - [ ] Pausas curtas em vez de apagadas; punch-in leve só no rosto
-- [ ] Imagem de verificação das emendas
+- [ ] Imagem de verificação das emendas (a skill de terceiros já gera `cuts.jpg`; sai junto com a ligação ao `render.py`)
 - [x] Transcrição com tempo por palavra, grátis e local (`transcribe_words.py`, Parakeet TDT v3; resolução 80 ms; erra termos como "IA" → "Ya", revisar o texto)
 - [x] Modelo guardado em `models/` (ignorado pelo git)
 
