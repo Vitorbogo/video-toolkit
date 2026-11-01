@@ -1,0 +1,31 @@
+{
+  "name": "publish",
+  "_nota": "Limites e regras por plataforma. Valores conferidos em 01/11/2026 em sites de terceiros (nao na documentacao oficial das plataformas): CONFIRMAR de vez em quando e ajustar aqui. Mudou a regra? Muda so este arquivo.",
+  "limites": {
+    "youtube": {
+      "titulo_max": 100,
+      "titulo_visivel_feed": 50,
+      "descricao_max": 5000,
+      "descricao_visivel": 100,
+      "hashtags_max": 60,
+      "hashtags_acima_do_titulo": 3,
+      "tags_total_max": 500,
+      "short_duracao_max_s": 180
+    },
+    "tiktok": {
+      "legenda_max": 4000,
+      "legenda_visivel": 100
+    }
+  },
+  "hashtags": {
+    "recomendado_min": 3,
+    "recomendado_max": 5
+  },
+  "checklist": [
+    "Áudio tratado com postaudio.py (-14 LUFS), não o original",
+    "Legenda queimada conferida no celular (a interface do TikTok não cobre o texto)",
+    "Capa escolhida conforme a recomendação acima",
+    "Ouvir as emendas com fones antes de postar",
+    "Guardar a gravação original até o vídeo estar publicado"
+  ]
+}

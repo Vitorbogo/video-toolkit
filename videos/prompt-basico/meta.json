@@ -1,0 +1,16 @@
+{
+  "titulos": [
+    "4 elementos de um bom prompt jurídico",
+    "Por que a IA erra seu pedido (e como evitar)",
+    "Prompt para advogados: papel, contexto, tarefa e formato"
+  ],
+  "descricao": "Você já recebeu um trabalho de estagiário fora do que pediu? Com a IA é igual: a instrução decide o resultado.\n\nNeste vídeo: os 4 elementos de um bom prompt (papel, contexto, tarefa e formato) e a diferença entre um pedido vago e um estruturado, com um exemplo jurídico.\n\nFaz parte do Curso IA para Advogados.",
+  "legenda_tiktok": "A IA errou o que você pediu? Muitas vezes a falha é da instrução. Papel, contexto, tarefa e formato: os 4 elementos de um bom prompt, com exemplo jurídico.",
+  "hashtags": {
+    "tiktok": ["#IAParaAdvogados", "#Prompt", "#Advocacia"],
+    "youtube": ["#IAParaAdvogados", "#Prompt", "#Advocacia"]
+  },
+  "hashtags_motivo": "Uma de marca/público (#IAParaAdvogados), uma do tema (#Prompt) e uma do setor (#Advocacia); sem hashtags genéricas de alcance.",
+  "capa": { "variante": "A", "motivo": "Texto legível no celular e quadro de rosto aberto; confirmar olhando as três antes de postar." },
+  "notas": "Exemplo de teste escrito a partir da aula e das legendas do plan.json. Confirmar se o nome 'Curso IA para Advogados' e as hashtags são os que você quer usar."
+}

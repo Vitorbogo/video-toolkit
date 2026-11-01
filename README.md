@@ -9,9 +9,10 @@ Tudo roda local, só com ffmpeg e Python. Receita e decisões estão no vault do
 | Pasta | O que tem |
 |-------|-----------|
 | `vendor/dev-video-editing/` | Skill de terceiros (MIT), **sem modificações**. Decide cortes com tempo por palavra, enchimentos, repetições, punch-ins. Ver `VENDOR.md`. |
-| `src/vtk/` | Nossos scripts: `seg.py`, `transcribe_words.py` (tempo por palavra, gratis), `transcribe_sherpa.py` (por trecho, antigo), `render.py`, `postaudio.py`, `thumb.py`. |
+| `src/vtk/` | Nossos scripts: `seg.py`, `transcribe_words.py` (tempo por palavra, gratis), `transcribe_sherpa.py` (por trecho, antigo), `render.py`, `postaudio.py`, `thumb.py`, `publish.py` (metadados de publicação). |
 | `models/` | Modelo de transcricao (487 MB), **fora do git**. Ver abaixo.  |
-| `presets/` | Parâmetros por formato (layout, corte, legenda, áudio, imagem). `tiktok-vertical.json`. |
+| `presets/` | Parâmetros por formato (layout, corte, legenda, áudio, imagem) e limites das plataformas (`publish.json`). |
+| `.claude/` | `skills/publicar-video` (como escrever os metadados) e `hooks/guard.py` (bloqueia mídia no git, apagar `.mov`, API paga). |
 | `videos/<nome>/` | Transcrição, lista de cortes e legendas de cada vídeo. **Sem mídia.** |
 
 ## Fluxo
@@ -34,6 +35,9 @@ python3 src/vtk/postaudio.py --preset presets/tiktok-vertical.json --in final.mp
 # 5. capas: cada formato pode usar um quadro; "variantes" no thumb.json gera vários pares
 python3 src/vtk/thumb.py --video final.mp4 --spec videos/<nome>/thumb.json --out capas/
 python3 src/vtk/thumb.py --video final.mp4 --spec videos/<nome>/thumb.json --out capas/ --sheet 5,20,40,62,95  # folha de candidatos
+# 6. publicação: valida limites das plataformas e gera videos/<nome>/publicar.md (título, descrição, legenda, hashtags, capa)
+#    o meta.json é escrito pelo Claude (skill publicar-video) logo depois do plan.json
+python3 src/vtk/publish.py --name <nome> --video final_audio.mp4 --capas capas/
 ```
 
 Imagem da câmera: `--camera-filter off|natural` no `render.py` (padrão do preset).
