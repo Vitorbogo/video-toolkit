@@ -8,6 +8,6 @@ Ferramentas locais (ffmpeg + Python) para vídeos curtos verticais. Fluxo e coma
 - Cortes e legendas são revisados com o Vitor. Palavra não entendida: perguntar, nunca inventar.
 
 ## Todo vídeo termina com publicação
-1. Ao escrever `videos/<nome>/plan.json`, escrever também `videos/<nome>/meta.json` (skill `publicar-video`).
+1. Depois de revisar com o Vitor o `videos/<nome>/plan.json` (rascunho do `cuts.py`), escrever o `videos/<nome>/meta.json` (skill `publicar-video`).
 2. Depois de `postaudio.py` e `thumb.py`, rodar `python3 src/vtk/publish.py --name <nome> --video <final> --capas <pasta>`.
 3. Entregar ao Vitor o `videos/<nome>/publicar.md` (título, descrição, legenda, hashtags, capa, checklist). Limites de plataforma ficam em `presets/publish.json`, não na conversa.

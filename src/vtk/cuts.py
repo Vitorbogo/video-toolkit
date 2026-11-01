@@ -95,7 +95,7 @@ if __name__ == "__main__":
     if os.path.exists(pp) and not a.force: sys.exit(f"ERRO: {os.path.relpath(pp, ROOT)} ja existe (legendas revisadas?). Use --force para sobrescrever.")
     vendor.check_tools()
     edit = json.load(open(a.edit, encoding="utf-8")) if a.edit else {}
-    P = json.load(open(a.preset if os.path.isabs(a.preset) else os.path.join(ROOT, a.preset)))
+    P = json.load(open(a.preset if os.path.isabs(a.preset) else os.path.join(ROOT, a.preset), encoding="utf-8"))
     words = json.load(open(a.transcript, encoding="utf-8"))["words"]
     _, _, total, fps = vendor.probe(a.video)
     print("ouvindo e olhando...", flush=True)

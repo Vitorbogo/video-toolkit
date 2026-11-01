@@ -40,7 +40,7 @@ python3 src/vtk/postaudio.py --preset presets/tiktok-vertical.json --in final.mp
 python3 src/vtk/thumb.py --video final.mp4 --spec videos/<nome>/thumb.json --out capas/
 python3 src/vtk/thumb.py --video final.mp4 --spec videos/<nome>/thumb.json --out capas/ --sheet 5,20,40,62,95  # folha de candidatos
 # 6. publicação: valida limites das plataformas e gera videos/<nome>/publicar.md (título, descrição, legenda, hashtags, capa)
-#    o meta.json é escrito pelo Claude (skill publicar-video) logo depois do plan.json
+#    o meta.json é escrito pelo Claude (skill publicar-video) logo depois da revisão do plan.json
 python3 src/vtk/publish.py --name <nome> --video final_audio.mp4 --capas capas/
 ```
 
@@ -53,7 +53,8 @@ Imagem da câmera: `--camera-filter off|natural` no `render.py` (padrão do pres
 - [x] Tratamento leve de imagem da câmera (opcional)
 - [x] Capas 9:16 e 16:9 determinísticas (`thumb.py`), com quadro próprio por formato
 - [x] Cópia da skill da DEV Community, sem alterações
-- [x] Ligar a skill de terceiros ao `render.py` (`cuts.py`: cortes com tempo por palavra e bordas ajustadas pelo áudio). Testado só com dados sintéticos: falta a 1ª rodada num vídeo real
+- [ ] Ligar a skill de terceiros ao `render.py`: `cuts.py` pronto (cortes com tempo por palavra e bordas ajustadas pelo áudio), testado só com dados sintéticos. Falta a 1ª rodada num vídeo real para marcar como feito
+  - Decisão nossa por cima da skill: ela deixa uma "respiração" no lugar do enchimento removido, e uma ponta do som continuava audível. O `cuts.py` tira também essa ponta (sem entrar em palavra mantida) e descarta sobras sem fala com menos de 0,4 s. Os cortes extras aparecem no `edit-plan.md`
 - [x] Lista de enchimentos em português (`presets/fillers-pt.json`, aplicada pelo `cuts.py`)
 - [x] Pausas curtas em vez de apagadas (a skill encurta para uma respiração)
 - [ ] Punch-in leve só no rosto
