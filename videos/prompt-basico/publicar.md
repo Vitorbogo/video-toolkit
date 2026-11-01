@@ -1,10 +1,6 @@
 # Publicar — prompt-basico
 
-_Gerado por `publish.py` em 2026-11-01 · duração 3:50_
-
-> [!warning] Avisos
-> - titulo 3 tem 56 caracteres; no feed so aparecem ~50. Ponha o principal no comeco.
-> - video com 230 s: acima de 180 s, o YouTube nao trata como Short (vira video vertical normal).
+_Gerado por `publish.py` em 2026-11-01_
 
 ## Capa
 
@@ -19,9 +15,9 @@ _Gerado por `publish.py` em 2026-11-01 · duração 3:50_
 Legenda (cole inteira):
 
 ```text
-A IA errou o que você pediu? Muitas vezes a falha é da instrução. Papel, contexto, tarefa e formato: os 4 elementos de um bom prompt, com exemplo jurídico.
+A IA errou o que você pediu? Muitas vezes a falha é da instrução. Papel, contexto, tarefa e formato: os 4 elementos de um bom prompt, com um pedido vago e um estruturado lado a lado.
 
-#IAParaAdvogados #Prompt #Advocacia
+#InteligenciaArtificial #Prompt #EngenhariaDePrompt #Produtividade
 ```
 
 ## YouTube
@@ -29,32 +25,32 @@ A IA errou o que você pediu? Muitas vezes a falha é da instrução. Papel, con
 **Título recomendado:**
 
 ```text
-4 elementos de um bom prompt jurídico
+Os 4 elementos de um bom prompt
 ```
 
 Alternativas:
 - Por que a IA erra seu pedido (e como evitar)
-- Prompt para advogados: papel, contexto, tarefa e formato
+- Papel, contexto, tarefa e formato: prompt melhor
 
 Descrição (cole inteira; as 3 primeiras hashtags aparecem acima do título):
 
 ```text
-Você já recebeu um trabalho de estagiário fora do que pediu? Com a IA é igual: a instrução decide o resultado.
+Você já recebeu um trabalho fora do que pediu? Com a IA é igual: a instrução decide o resultado.
 
-Neste vídeo: os 4 elementos de um bom prompt (papel, contexto, tarefa e formato) e a diferença entre um pedido vago e um estruturado, com um exemplo jurídico.
+Neste vídeo: os 4 elementos de um bom prompt (papel, contexto, tarefa e formato) e a diferença entre um pedido vago e um estruturado, com o exemplo de um resumo de contrato.
 
-Faz parte do Curso IA para Advogados.
+Teste: escreva dois prompts para a mesma tarefa e compare os resultados.
 
-#IAParaAdvogados #Prompt #Advocacia
+#InteligenciaArtificial #Prompt #EngenhariaDePrompt #Produtividade
 ```
 
 ## Hashtags: por quê
 
-Uma de marca/público (#IAParaAdvogados), uma do tema (#Prompt) e uma do setor (#Advocacia); sem hashtags genéricas de alcance.
+Público geral (quem usa IA no trabalho); o contrato é só o exemplo. Uma ampla (#InteligenciaArtificial), duas do tema (#Prompt, #EngenhariaDePrompt) e uma do uso no trabalho (#Produtividade).
 
 ## Notas
 
-Exemplo de teste escrito a partir da aula e das legendas do plan.json. Confirmar se o nome 'Curso IA para Advogados' e as hashtags são os que você quer usar.
+As capas atuais têm o rodapé 'Curso IA para Advogados' (thumb.json). Para o público geral, trocar o rodapé e rodar thumb.py de novo antes de postar. O vídeo final tem 3:50: no YouTube não vira Short. Rodar publish.py com --video e --capas quando o mp4 final estiver à mão.
 
 ## Antes de postar
 
