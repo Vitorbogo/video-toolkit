@@ -9,7 +9,7 @@ Tudo roda local, só com ffmpeg e Python. Receita e decisões estão no vault do
 | Pasta | O que tem |
 |-------|-----------|
 | `vendor/dev-video-editing/` | Skill de terceiros (MIT), **sem modificações**. Decide cortes com tempo por palavra, enchimentos, repetições, punch-ins. Ver `VENDOR.md`. |
-| `src/vtk/` | Nossos scripts: `seg.py`, `transcribe_words.py` (tempo por palavra, gratis), `transcribe_sherpa.py` (por trecho, antigo), `render.py`, `postaudio.py`, `thumb.py`, `publish.py` (metadados de publicação). |
+| `src/vtk/` | Nossos scripts: `seg.py`, `transcribe_words.py` (tempo por palavra, gratis), `transcribe_sherpa.py` (por trecho, antigo), `cuts.py` (cortes pela skill de terceiros → `plan.json`), `render.py`, `postaudio.py`, `thumb.py`, `publish.py` (metadados de publicação). |
 | `models/` | Modelo de transcricao (487 MB), **fora do git**. Ver abaixo.  |
 | `presets/` | Parâmetros por formato (layout, corte, legenda, áudio, imagem), enchimentos em português (`fillers-pt.json`) e limites das plataformas (`publish.json`). |
 | `tests/` | Testes (`python3 -m unittest discover tests`). |
@@ -24,9 +24,12 @@ ffmpeg -i GRAVACAO.mov -vn -ac 1 -ar 16000 audio.wav
 ffmpeg -i audio.wav -af silencedetect=noise=-35dB:d=0.4 -f null - 2>&1 | grep -E "silence_(start|end)" \
   | sed -E 's/.*silence_(start|end): ([0-9.]+).*/\1 \2/' > sil.txt
 python3 src/vtk/seg.py --sil sil.txt --dur DURACAO --out segs.json
-# 2. transcrever com tempo por palavra (gratis, local, ~11 s para 6 min), ler tudo, escrever plan.json (cortes + legendas corrigidas) em videos/<nome>/
+# 2. transcrever com tempo por palavra (gratis, local, ~11 s para 6 min)
 python3 src/vtk/transcribe_words.py --audio audio.wav --segs segs.json \
   --model-dir models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8 --out work/   # transcript.json + transcript.txt
+# 2b. cortes decididos pela skill de terceiros (enchimentos PT, pausas encurtadas, bordas pelo audio) -> rascunho do plan.json
+#     + edit-plan.md. Revisar cortes e legendas com o Vitor; ajustes (cut, keep, replace, style) em videos/<nome>/edit.json
+python3 src/vtk/cuts.py --video GRAVACAO.mov --transcript work/transcript.json --name <nome> [--edit videos/<nome>/edit.json]
 # 3. prévia e final (retoma de onde parou)
 python3 src/vtk/render.py --preset presets/tiktok-vertical.json --video GRAVACAO.mov \
   --plan videos/<nome>/plan.json --out render_prev --scale 0.5 --crf 30
@@ -50,10 +53,11 @@ Imagem da câmera: `--camera-filter off|natural` no `render.py` (padrão do pres
 - [x] Tratamento leve de imagem da câmera (opcional)
 - [x] Capas 9:16 e 16:9 determinísticas (`thumb.py`), com quadro próprio por formato
 - [x] Cópia da skill da DEV Community, sem alterações
-- [ ] Ligar a skill de terceiros ao `render.py` (cortes com tempo por palavra e bordas ajustadas pelo áudio)
-- [x] Lista de enchimentos em português (`presets/fillers-pt.json`; por enquanto copiada à mão para o `edit.json`, ver `_nota`)
-- [ ] Pausas curtas em vez de apagadas; punch-in leve só no rosto
-- [ ] Imagem de verificação das emendas (a skill de terceiros já gera `cuts.jpg`; sai junto com a ligação ao `render.py`)
+- [x] Ligar a skill de terceiros ao `render.py` (`cuts.py`: cortes com tempo por palavra e bordas ajustadas pelo áudio). Testado só com dados sintéticos: falta a 1ª rodada num vídeo real
+- [x] Lista de enchimentos em português (`presets/fillers-pt.json`, aplicada pelo `cuts.py`)
+- [x] Pausas curtas em vez de apagadas (a skill encurta para uma respiração)
+- [ ] Punch-in leve só no rosto
+- [ ] Imagem de verificação das emendas (dá para usar a `cut_sheet` da skill sobre o nosso final)
 - [x] Transcrição com tempo por palavra, grátis e local (`transcribe_words.py`, Parakeet TDT v3; resolução 80 ms; erra termos como "IA" → "Ya", revisar o texto)
 - [x] Modelo guardado em `models/` (ignorado pelo git)
 
