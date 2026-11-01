@@ -14,7 +14,7 @@ Tudo roda local, só com ffmpeg e Python. Receita e decisões estão no vault do
 | `presets/` | Parâmetros por formato (layout, corte, legenda, áudio, imagem), enchimentos em português (`fillers-pt.json`) e limites das plataformas (`publish.json`). |
 | `tests/` | Testes (`python3 -m unittest discover tests`). |
 | `.claude/` | `skills/publicar-video` (como escrever os metadados) e `hooks/guard.py` (bloqueia mídia no git, apagar `.mov`, API paga). |
-| `videos/<nome>/` | Transcrição, lista de cortes e legendas de cada vídeo. **Sem mídia.** |
+| `videos/<nome>/` | Transcrição, lista de cortes, legendas e metadados de cada vídeo. **Fora do git** (o repo é público e o conteúdo não pode vazar antes de o vídeo sair). |
 
 ## Fluxo
 

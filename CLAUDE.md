@@ -4,7 +4,7 @@ Ferramentas locais (ffmpeg + Python) para vídeos curtos verticais. Fluxo e coma
 
 ## Regras fixas
 - Tudo local e grátis. Sem API paga, sem enviar áudio/vídeo para fora, a menos que o Vitor peça. (O hook `.claude/hooks/guard.py` bloqueia o óbvio.)
-- Mídia e modelos nunca entram no git. Guardar a gravação original (`.mov`) até o vídeo estar publicado.
+- Mídia, modelos e `videos/` (transcrições, cortes, metadados) nunca entram no git: o repo é público. Guardar a gravação original (`.mov`) até o vídeo estar publicado.
 - Cortes e legendas são revisados com o Vitor. Palavra não entendida: perguntar, nunca inventar.
 
 ## Todo vídeo termina com publicação

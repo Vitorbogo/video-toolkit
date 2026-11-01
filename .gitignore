@@ -12,3 +12,6 @@ render*/
 work/
 .DS_Store
 __pycache__/
+
+# conteudo de cada video (transcricao, cortes, metadados) fica local: o repo e publico
+videos/
