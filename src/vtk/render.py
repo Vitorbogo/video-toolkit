@@ -18,6 +18,8 @@ ap.add_argument("--budget", type=float, default=1e9)
 ap.add_argument("--camera-filter", default=None, help="off|natural (padrao: o do preset)")
 a = ap.parse_args()
 
+# o ffmpeg roda com cwd=a.out (por causa do .ass da legenda): caminhos relativos quebravam
+a.out, a.video = os.path.abspath(a.out), os.path.abspath(a.video)
 P = json.load(open(a.preset)); plan = json.load(open(a.plan)); os.makedirs(a.out, exist_ok=True)
 K = a.scale
 ev = lambda x: int(round(x * K / 2)) * 2
