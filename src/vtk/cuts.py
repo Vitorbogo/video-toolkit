@@ -4,7 +4,7 @@
 Uso:
   python3 src/vtk/cuts.py --video GRAVACAO.mov --transcript work/transcript.json --name <nome>
       [--edit videos/<nome>/edit.json] [--zoom [1.1]] [--sem-cenas] [--force]
-Escreve videos/<nome>/plan.json (rascunho: legendas com o texto do Parakeet, REVISAR com o Vitor) e
+Escreve videos/<nome>/plan.json (rascunho: legendas com o texto do Parakeet, REVISAR) e
 videos/<nome>/edit-plan.md (cada remocao com o motivo). Nao sobrescreve um plan.json existente sem --force.
 edit.json (opcional) usa as chaves da skill: style, pauses, cut, keep, replace, extra_fillers...
 'cut' so tira palavras inteiras dentro do intervalo (trecho sem palavra nao some por ele). Rodar de novo com --force
@@ -121,6 +121,6 @@ if __name__ == "__main__":
     md = report(plan, removed, maybe, total)
     open(os.path.join(vdir, "edit-plan.md"), "w", encoding="utf-8").write(md)
     print(md.splitlines()[2])
-    print(f"ok: {os.path.relpath(pp, ROOT)} e edit-plan.md. Revisar cortes e legendas com o Vitor antes do render;")
+    print(f"ok: {os.path.relpath(pp, ROOT)} e edit-plan.md. Revisar cortes e legendas antes do render;")
     print("depois escrever o meta.json (skill publicar-video).")
     for w in vendor.WARNINGS: print("  aviso:", w)

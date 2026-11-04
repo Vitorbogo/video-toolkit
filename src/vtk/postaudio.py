@@ -2,7 +2,7 @@
 """Tratamento de audio deterministico, em 2 passadas, sobre o video ja montado.
 
 Cadeia (ordem fixa, parametros no preset): filtro de graves -> reducao de ruido (afftdn, DESLIGADA no
-preset: deixava a voz robotica com o microfone do Vitor) -> compressor suave -> loudnorm medido (passada 1) e aplicado linear (passada 2) -> limitador.
+preset: deixava a voz robotica) -> compressor suave -> loudnorm medido (passada 1) e aplicado linear (passada 2) -> limitador.
 O video e copiado sem recodificar.
 
 Uso: python3 postaudio.py --preset presets/tiktok-vertical.json --in final.mp4 --out final_audio.mp4

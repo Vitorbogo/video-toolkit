@@ -16,13 +16,13 @@ REGRAS = [
     (r"\bgit\s+add\b[^|;&]*" + MIDIA,
      "Nao adicione midia/modelos ao git (video, audio, .onnx). Fica fora do repositorio."),
     (r"\b(rm|unlink|shred)\b[^|;&]*\.mov\b",
-     "Nao apague gravacao original (.mov). So depois do video final estar publicado, e a pedido do Vitor."),
+     "Nao apague gravacao original (.mov). So depois do video final estar publicado, e a pedido."),
     (r"\bmv\b[^|;&]*\.mov\b[^|;&]*\s/dev/null",
      "Nao descarte gravacao original (.mov)."),
     (r"\b(curl|wget|http|scp|rclone)\b[^|;&]*(-F\b|--form|--data-binary|-T\b|--upload-file|@)[^|;&]*" + MIDIA,
-     "Nao envie audio/video para fora do computador sem o Vitor pedir."),
+     "Nao envie audio/video para fora do computador sem o autor pedir."),
     (r"api\.openai\.com|assemblyai|deepgram|elevenlabs|api\.groq\.com|speech\.googleapis",
-     "Transcricao e edicao sao locais e gratis neste projeto. Nada de API paga sem o Vitor pedir."),
+     "Transcricao e edicao sao locais e gratis neste projeto. Nada de API paga sem o autor pedir."),
 ]
 for rx, msg in REGRAS:
     if re.search(rx, cmd, re.I):

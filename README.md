@@ -1,6 +1,6 @@
 # video-toolkit
 
-Ferramentas do Vitor para editar vídeos curtos verticais (TikTok) a partir de uma gravação de tela com a câmera.
+Ferramentas para editar vídeos curtos verticais a partir de uma gravação de tela com a câmera.
 Tudo roda local, só com ffmpeg e Python. Receita e decisões estão no vault do Obsidian
 (`Vídeos/_Receita de Edição de Vídeo.md`).
 
@@ -28,7 +28,7 @@ python3 src/vtk/seg.py --sil sil.txt --dur DURACAO --out segs.json
 python3 src/vtk/transcribe_words.py --audio audio.wav --segs segs.json \
   --model-dir models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8 --out work/   # transcript.json + transcript.txt
 # 2b. cortes decididos pela skill de terceiros (enchimentos PT, pausas encurtadas, bordas pelo audio) -> rascunho do plan.json
-#     + edit-plan.md. Revisar cortes e legendas com o Vitor; ajustes (cut, keep, replace, style) em videos/<nome>/edit.json
+#     + edit-plan.md. Revisar cortes e legendas; ajustes (cut, keep, replace, style) em videos/<nome>/edit.json
 python3 src/vtk/cuts.py --video GRAVACAO.mov --transcript work/transcript.json --name <nome> [--edit videos/<nome>/edit.json]
 #     zoom é opcional e fica desligado: só se as emendas ficarem bruscas, rodar com --zoom (1.1x na câmera) ou pôr
 #     "z": 1.1 à mão no trecho do plan.json (máx. 1.2). Slide e legenda não mudam; o render.py refaz o clipe se o "z" mudar.
