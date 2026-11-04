@@ -1,17 +1,17 @@
-"""A lista de enchimentos em portugues (presets/fillers-pt.json) aplicada pela skill de terceiros.
+"""A lista de enchimentos em portugues (presets/fillers-pt.json) aplicada pelo engine.py.
 
     python3 -m unittest discover tests
 """
-import importlib.util, json, os, unittest
+import json, os, sys, unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-mod = importlib.util.spec_from_file_location("edit_video", os.path.join(ROOT, "vendor/dev-video-editing/scripts/edit_video.py"))
-ev = importlib.util.module_from_spec(mod); mod.loader.exec_module(ev)
+sys.path.insert(0, os.path.join(ROOT, "src"))
+from vtk import engine as ev
 PT = json.load(open(os.path.join(ROOT, "presets/fillers-pt.json"), encoding="utf-8"))
 
 
 def words(text, gap=0.1):
-    """Palavras com 0,3 s cada e uma pausa entre elas (suficiente para a skill aceitar o corte)."""
+    """Palavras com 0,3 s cada e uma pausa entre elas (suficiente para o engine aceitar o corte)."""
     out, t = [], 0.0
     for w in text.split():
         out.append({"w": w, "start": round(t, 3), "end": round(t + 0.3, 3)}); t += 0.3 + gap
@@ -25,7 +25,7 @@ def cut(text, edit):
 
 
 class FillersPT(unittest.TestCase):
-    def test_padrao_da_skill_corta_o_artigo_um(self):
+    def test_padrao_do_engine_corta_o_artigo_um(self):
         # o motivo do preset: sem ele, "um" (artigo) vira enchimento
         self.assertEqual(cut("Estou com um contrato.", {}), ["um"])
 
@@ -49,7 +49,7 @@ class FillersPT(unittest.TestCase):
             self.assertEqual(cut(frase, PT), [], frase)
 
     def test_limite_conhecido_entao_de_conclusao(self):
-        # a skill corta muleta com virgula antes OU depois; conferir no edit-plan.md
+        # o engine corta muleta com virgula antes OU depois; conferir no edit-plan.md
         self.assertEqual(cut("Se chover, então fica em casa.", PT), ["então"])
 
 

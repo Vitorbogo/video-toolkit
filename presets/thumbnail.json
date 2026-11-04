@@ -2,8 +2,8 @@
   "name": "thumbnail",
   "cores": { "fundo": "#141B2D", "texto": "#F5F1E8", "destaque": "#E3A93B", "suave": "#B9C0CF" },
   "fontes": {
-    "titulo": "vendor/dev-video-editing/fonts/Poppins-ExtraBold.ttf",
-    "texto": "vendor/dev-video-editing/fonts/Poppins-Bold.ttf"
+    "titulo": "assets/fonts/Poppins-ExtraBold.ttf",
+    "texto": "assets/fonts/Poppins-Bold.ttf"
   },
   "rosto_no_video": { "_nota": "regiao do rosto no video final 9:16 (layout do preset tiktok-vertical)", "x": 0, "y": 125, "w": 1080, "h": 597 },
   "imagem": { "contraste": 1.07, "cor": 1.10, "brilho": 1.03 },

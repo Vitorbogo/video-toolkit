@@ -2,7 +2,7 @@
 """Transcricao por trecho com Whisper (sherpa-onnx). Retoma de onde parou.
 Modelo: https://github.com/k2-fsa/sherpa-onnx/releases (asr-models/sherpa-onnx-whisper-small.tar.bz2).
   python3 transcribe_sherpa.py --audio audio.wav --segs segs.json --model-dir MODELO/ --out tr.json
-Sem tempo por palavra (so por trecho). Para tempo por palavra, usar a skill em vendor/ (faster-whisper).
+Sem tempo por palavra (so por trecho). Para tempo por palavra, usar transcribe_words.py.
 """
 import argparse, json, os, time, wave
 import numpy as np, sherpa_onnx

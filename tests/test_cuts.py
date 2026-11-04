@@ -1,4 +1,4 @@
-"""cuts.decide: palavras do Parakeet -> plan.json do render.py, com a skill de terceiros decidindo os cortes.
+"""cuts.decide: palavras do Parakeet -> plan.json do render.py, com o engine.py decidindo os cortes.
 
     python3 -m unittest discover tests
 """
@@ -23,7 +23,7 @@ class Decide(unittest.TestCase):
                     ("ééé", 1.6, 2.4), ("Quero", 2.6, 2.9), ("um", 3.0, 3.1), ("resumo.", 3.2, 3.8)])
         plan, removed, _ = cuts.decide(ws, {}, total=4.5)
         self.assertEqual(text_of(plan), "Estou com um contrato. Quero um resumo.")
-        # nenhum pedaco do "ééé" (1,6 a 2,4 s) pode ficar: a skill deixa a "respiracao" dentro dele
+        # nenhum pedaco do "ééé" (1,6 a 2,4 s) pode ficar: o engine deixa a "respiracao" dentro dele
         for c in plan:
             self.assertFalse(c["s"] < 2.4 and c["e"] > 1.6, c)
         self.assertTrue(any("filler" in r[2] for r in removed))
