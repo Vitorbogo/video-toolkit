@@ -3,13 +3,16 @@
 
 Uso:
   python3 src/vtk/cuts.py --video GRAVACAO.mov --transcript work/transcript.json --name <nome>
-      [--edit videos/<nome>/edit.json] [--sem-cenas] [--force]
+      [--edit videos/<nome>/edit.json] [--zoom [1.1]] [--sem-cenas] [--force]
 Escreve videos/<nome>/plan.json (rascunho: legendas com o texto do Parakeet, REVISAR com o Vitor) e
 videos/<nome>/edit-plan.md (cada remocao com o motivo). Nao sobrescreve um plan.json existente sem --force.
 edit.json (opcional) usa as chaves da skill: style, pauses, cut, keep, replace, extra_fillers...
 'cut' so tira palavras inteiras dentro do intervalo (trecho sem palavra nao some por ele). Rodar de novo com --force
 refaz as legendas do zero: correcoes repetidas vao no 'replace' do edit.json para sobreviver.
 Os enchimentos em portugues (presets/fillers-pt.json) entram sempre; os do edit.json somam com eles.
+Zoom e opcional e fica DESLIGADO: so usar --zoom quando as emendas ficarem bruscas. Com ele, a regra da skill
+(alterna zoom/sem zoom em emendas de 1 s ou mais, ou depois de 4 s no mesmo enquadramento) poe "z" nos trechos
+do plan.json. Tambem da para por ou tirar "z" a mao em qualquer trecho.
 """
 import argparse, importlib.util, json, math, os, sys
 
@@ -51,8 +54,9 @@ def exclude(words, reason, spans, fps):
     return spans
 
 
-def decide(words, edit, total, fps=30.0, db=(), floor=-60.0, blacks=(), scenes=(), max_chars=60):
+def decide(words, edit, total, fps=30.0, db=(), floor=-60.0, blacks=(), scenes=(), max_chars=60, zoom=0):
     """Retorna (plan, removidos, possiveis_retomadas). Tempos de 'removidos' e 'retomadas' na gravacao original.
+    zoom > 1 liga a sugestao de zoom da skill (so na camera, no render.py); 0 deixa todos os trechos sem zoom.
     'fillers' e 'extra_fillers' do edit.json somam com a lista em portugues; o resto das chaves vai direto para a skill."""
     spec = {**edit, **{k: v + [x for x in edit.get(k, []) if x not in v] for k, v in FILLERS_PT.items()}}
     reason, maybe = vendor.mark(words, spec)
@@ -68,12 +72,20 @@ def decide(words, edit, total, fps=30.0, db=(), floor=-60.0, blacks=(), scenes=(
         ws = [dict(w, w=vendor.apply_replace(w["w"], rep), end=min(w["end"], e)) for w, r in zip(words, reason)
               if r is None and s <= w["start"] < e]
         plan.append({"s": s, "e": e, "ev": captions(ws, s, max_chars)})
+    if zoom > 1:
+        zs = vendor.zoom_plan(spans, {"style": spec.get("style", "youtube"), "punch_in": zoom}, list(scenes), list(blacks))
+        for c, z in zip(plan, zs):
+            if z > 1: c["z"] = z
     return plan, removed, maybe
 
 
 def report(plan, removed, maybe, total):
     dur = sum(c["e"] - c["s"] for c in plan)
     o = [f"# Plano de cortes\n\n{vendor.stamp(total)} -> {vendor.stamp(dur)} ({(total - dur) / total * 100:.0f}% menor), {len(plan) - 1} cortes.\n"]
+    zoomed = [(i, c) for i, c in enumerate(plan) if c.get("z", 1) > 1]
+    if zoomed:
+        o.append("## Zoom na câmera (opcional: tirar o \"z\" do trecho no plan.json se não precisar)\n")
+        o += [f"- trecho {i} ({vendor.stamp(c['s'])}): {c['z']:g}x" for i, c in zoomed] + [""]
     if maybe:
         o.append("## Possíveis retomadas (não cortadas: decidir e pôr em \"cut\" no edit.json)\n")
         o += [f"- {vendor.stamp(t)}: \"{a[:90]}\" depois \"{b[:90]}\"" for t, a, b in maybe] + [""]
@@ -87,8 +99,10 @@ if __name__ == "__main__":
     ap.add_argument("--video", required=True); ap.add_argument("--transcript", required=True)
     ap.add_argument("--name", required=True); ap.add_argument("--edit")
     ap.add_argument("--preset", default="presets/tiktok-vertical.json")
+    ap.add_argument("--zoom", type=float, nargs="?", const=1.1, default=0,
+                    help="sugere zoom na camera nas emendas (desligado por padrao; sem valor = 1.1, maximo 1.2)")
     ap.add_argument("--sem-cenas", action="store_true", help="ignora trocas de slide ao posicionar cortes")
-    ap.add_argument("--force", action="store_true", help="sobrescreve plan.json existente (perde as legendas revisadas)")
+    ap.add_argument("--force", action="store_true", help="sobrescreve plan.json existente (perde as legendas revisadas e os \"z\" postos a mao)")
     a = ap.parse_args()
     vdir = os.path.join(ROOT, "videos", a.name); os.makedirs(vdir, exist_ok=True)
     pp = os.path.join(vdir, "plan.json")
@@ -102,7 +116,7 @@ if __name__ == "__main__":
     db, floor = vendor.audio_energy(a.video)
     blacks, scenes = vendor.visual_events(a.video)
     if a.sem_cenas: scenes = []
-    plan, removed, maybe = decide(words, edit, total, fps, db, floor, blacks, scenes, P["subtitles"]["max_chars_per_event"])
+    plan, removed, maybe = decide(words, edit, total, fps, db, floor, blacks, scenes, P["subtitles"]["max_chars_per_event"], zoom=a.zoom)
     json.dump(plan, open(pp, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     md = report(plan, removed, maybe, total)
     open(os.path.join(vdir, "edit-plan.md"), "w", encoding="utf-8").write(md)

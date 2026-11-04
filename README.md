@@ -30,6 +30,9 @@ python3 src/vtk/transcribe_words.py --audio audio.wav --segs segs.json \
 # 2b. cortes decididos pela skill de terceiros (enchimentos PT, pausas encurtadas, bordas pelo audio) -> rascunho do plan.json
 #     + edit-plan.md. Revisar cortes e legendas com o Vitor; ajustes (cut, keep, replace, style) em videos/<nome>/edit.json
 python3 src/vtk/cuts.py --video GRAVACAO.mov --transcript work/transcript.json --name <nome> [--edit videos/<nome>/edit.json]
+#     zoom é opcional e fica desligado: só se as emendas ficarem bruscas, rodar com --zoom (1.1x na câmera) ou pôr
+#     "z": 1.1 à mão no trecho do plan.json (máx. 1.2). Slide e legenda não mudam; o render.py refaz o clipe se o "z" mudar.
+#     --force no cuts.py refaz o plan.json e perde os "z" postos à mão
 # 3. prévia e final (retoma de onde parou)
 python3 src/vtk/render.py --preset presets/tiktok-vertical.json --video GRAVACAO.mov \
   --plan videos/<nome>/plan.json --out render_prev --scale 0.5 --crf 30
@@ -58,7 +61,7 @@ Imagem da câmera: `--camera-filter off|natural` no `render.py` (padrão do pres
   - Decisão nossa por cima da skill: ela deixa uma "respiração" no lugar do enchimento removido, e uma ponta do som continuava audível. O `cuts.py` tira também essa ponta (sem entrar em palavra mantida) e descarta sobras sem fala com menos de 0,4 s. Os cortes extras aparecem no `edit-plan.md`
 - [x] Lista de enchimentos em português (`presets/fillers-pt.json`, aplicada pelo `cuts.py`)
 - [x] Pausas curtas em vez de apagadas (a skill encurta para uma respiração)
-- [ ] Punch-in leve só no rosto
+- [ ] Zoom leve só na câmera, **opcional** (`cuts.py --zoom` sugere, `"z"` no `plan.json` decide; `render.py` aplica). Falta rodar num vídeo real
 - [ ] Imagem de verificação das emendas (dá para usar a `cut_sheet` da skill sobre o nosso final)
 - [x] Transcrição com tempo por palavra, grátis e local (`transcribe_words.py`, Parakeet TDT v3; resolução 80 ms; erra termos como "IA" → "Ya", revisar o texto)
 - [x] Modelo guardado em `models/` (ignorado pelo git)
