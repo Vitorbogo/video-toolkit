@@ -34,7 +34,7 @@ python3 src/vtk/cuts.py --video GRAVACAO.mov --transcript work/transcript.json -
 python3 src/vtk/render.py --preset presets/tiktok-vertical.json --video GRAVACAO.mov \
   --plan videos/<nome>/plan.json --out render_prev --scale 0.5 --crf 30
 ffmpeg -f concat -safe 0 -i lista.txt -c copy final.mp4
-# 4. áudio: filtros fixos + loudnorm em 2 passadas (-14 LUFS)
+# 4. áudio: filtros fixos + loudnorm em 2 passadas (-14 LUFS). Redução de ruído desligada no preset (voz robótica)
 python3 src/vtk/postaudio.py --preset presets/tiktok-vertical.json --in final.mp4 --out final_audio.mp4
 # 5. capas: cada formato pode usar um quadro; "variantes" no thumb.json gera vários pares
 python3 src/vtk/thumb.py --video final.mp4 --spec videos/<nome>/thumb.json --out capas/
@@ -49,7 +49,8 @@ Imagem da câmera: `--camera-filter off|natural` no `render.py` (padrão do pres
 ## Estado (v0.1)
 
 - [x] Layout 9:16 (rosto, slide, legenda) a partir de preset
-- [x] Áudio determinístico em 2 passadas: **-14 LUFS, pico ~-1,4 dBTP** (testado no 1º vídeo)
+- [x] Áudio determinístico em 2 passadas: **-14 LUFS, pico ~-1,4 dBTP** (medido no 1º vídeo, com a cadeia antiga)
+- [ ] Cadeia de áudio nova como padrão: sem redução de ruído (o `afftdn` deixava a voz robótica), compressor 2:1 e `pre_limiter` 1.0, o ajuste usado no 2º vídeo. Falta medir LUFS/pico com ela
 - [x] Tratamento leve de imagem da câmera (opcional)
 - [x] Capas 9:16 e 16:9 determinísticas (`thumb.py`), com quadro próprio por formato
 - [x] Cópia da skill da DEV Community, sem alterações

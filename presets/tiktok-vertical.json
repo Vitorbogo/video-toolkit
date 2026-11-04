@@ -27,11 +27,11 @@
     "primary": "&H00FFFFFF", "outline_color": "&H00281B14"
   },
   "audio": {
-    "_nota": "medido no 1o video: voz ~-24 dB, fundo ~-61 dB, 37 dB de folga. Reducao de ruido LEVE de proposito.",
+    "_nota": "medido no 1o video: voz ~-24 dB, fundo ~-61 dB, 37 dB de folga. Reducao de ruido DESLIGADA: com o microfone do Vitor o afftdn deixava a voz robotica (2o video). Compressor 2:1 e pre_limiter 1.0 sao os do ajuste que ele usou nesse video. So ligar o denoise se aparecer ruido de fundo, comparando antes/depois.",
     "highpass_hz": 80,
-    "denoise": { "enabled": true, "nr_db": 6, "noise_floor_db": -60 },
-    "compressor": { "threshold_linear": 0.04, "ratio": 4, "attack_ms": 10, "release_ms": 150, "makeup": 1 },
-    "pre_limiter": 0.5,
+    "denoise": { "enabled": false, "nr_db": 0, "noise_floor_db": -60 },
+    "compressor": { "threshold_linear": 0.06, "ratio": 2, "attack_ms": 20, "release_ms": 250, "makeup": 1 },
+    "pre_limiter": 1.0,
     "loudnorm": { "I": -14, "TP": -1.5, "LRA": 11 },
     "limiter": 0.84,
     "bitrate": "160k"
