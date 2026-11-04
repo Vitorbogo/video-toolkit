@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Transcricao com TEMPO POR PALAVRA, gratis e local (sherpa-onnx + NVIDIA Parakeet TDT v3, multilingue, inclui portugues).
 
-Gera o mesmo formato da skill de terceiros (vendor/dev-video-editing): transcript.json com "words" e "sentences",
+Gera o formato que o src/vtk/engine.py le: transcript.json com "words" e "sentences",
 mais transcript.txt (uma linha por frase, com tempo). A resolucao e de 80 ms (um quadro do modelo).
 
   python3 src/vtk/transcribe_words.py --audio audio.wav --model-dir models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8 \

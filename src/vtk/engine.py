@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Baseado em edit_video.py de video-editing-skill (MIT, (c) 2026 Frank Heijdenrijk); ver THIRD_PARTY_LICENSES.md.
 """Edit a talking-head video: cut pauses, fillers, stutters and retakes, add punch-ins on jump
 cuts, clean and level the audio, and write captions and chapters.
 
@@ -33,7 +34,7 @@ Needs ffmpeg (any build) and Pillow (pip install pillow). Standard library other
 import argparse, array, functools, json, math, os, re, shutil, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FONT_DIR = os.path.join(HERE, "..", "fonts")
+FONT_DIR = os.path.join(HERE, "..", "..", "assets", "fonts")
 FONT_FILES = ["Poppins-ExtraBold.ttf", "Poppins-Bold.ttf"]
 FONT_URL = "https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/"
 DEFAULT_FILLERS = ["um", "uh", "uhm", "umm", "er", "erm", "ah", "hmm"]

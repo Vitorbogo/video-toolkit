@@ -9,16 +9,16 @@ Retoma de onde parou (pula clipes ja prontos). --budget limita o tempo por execu
 Depois: ffmpeg -f concat ... -c copy final.mp4 e vtk/postaudio.py para o audio.
 
 Zoom (opcional): um trecho do plan.json com "z": 1.1 aproxima so a janela da camera (slide e legenda
-nao mudam). Sem "z", ou "z": 1, o trecho sai sem zoom. Maximo 1.2 (regra da skill). O zoom de cada clipe
+nao mudam). Sem "z", ou "z": 1, o trecho sai sem zoom. Maximo 1.2. O zoom de cada clipe
 fica em cNN.z: se o "z" do trecho mudar, o clipe e refeito sozinho.
 """
-import argparse, importlib.util, json, os, subprocess, sys, textwrap, time
+import argparse, json, os, subprocess, sys, textwrap, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-_m = importlib.util.spec_from_file_location("edit_video", os.path.join(ROOT, "vendor/dev-video-editing/scripts/edit_video.py"))
-_vendor = importlib.util.module_from_spec(_m); _m.loader.exec_module(_vendor)
-EYE_LINE = _vendor.EYE_LINE  # mesma linha dos olhos da skill de terceiros: o zoom cresce a partir dela
-MAX_ZOOM = 1.2  # limite da skill (references/editing-rules.md)
+sys.path.insert(0, os.path.join(ROOT, "src"))
+from vtk import engine
+EYE_LINE = engine.EYE_LINE  # mesma linha dos olhos do engine.py: o zoom cresce a partir dela
+MAX_ZOOM = 1.2  # acima disso o zoom fica visivel demais
 
 
 def zoom_crop(crop, z, eye=EYE_LINE):
