@@ -24,8 +24,12 @@ REGRAS = [
     (r"api\.openai\.com|assemblyai|deepgram|elevenlabs|api\.groq\.com|speech\.googleapis",
      "Transcricao e edicao sao locais e gratis neste projeto. Nada de API paga sem o autor pedir."),
 ]
+# sfx/*.wav (efeitos curtos gerados por sintese) e a unica midia que pode entrar no git:
+# tira esses caminhos antes de checar a regra de "git add" com midia (o --force continua bloqueado)
+SFX = re.compile(r"(?<![\w/.-])(\./)?sfx/[\w.*-]+")
 for rx, msg in REGRAS:
-    if re.search(rx, cmd, re.I):
+    alvo = SFX.sub("sfx/", cmd) if rx.endswith(MIDIA) and "git" in rx else cmd
+    if re.search(rx, alvo, re.I):
         print(f"BLOQUEADO pelo guard do video-toolkit: {msg}\nComando: {cmd[:200]}", file=sys.stderr)
         sys.exit(2)
 sys.exit(0)

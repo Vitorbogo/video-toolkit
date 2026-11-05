@@ -9,11 +9,12 @@ Tudo roda local, só com ffmpeg e Python. Receita e decisões estão no vault do
 | Pasta | O que tem |
 |-------|-----------|
 | `vendor/dev-video-editing/` | Skill de terceiros (MIT), **sem modificações**. Decide cortes com tempo por palavra, enchimentos, repetições, punch-ins. Ver `VENDOR.md`. |
-| `src/vtk/` | Nossos scripts: `seg.py`, `transcribe_words.py` (tempo por palavra, gratis), `transcribe_sherpa.py` (por trecho, antigo), `cuts.py` (cortes pela skill de terceiros → `plan.json`), `render.py`, `postaudio.py`, `thumb.py`, `publish.py` (metadados de publicação). |
+| `src/vtk/` | Nossos scripts: `seg.py`, `transcribe_words.py` (tempo por palavra, gratis), `transcribe_sherpa.py` (por trecho, antigo), `cuts.py` (cortes pela skill de terceiros → `plan.json`), `render.py`, `postaudio.py` (com `--sfx`), `sfx.py` (efeitos sonoros), `thumb.py`, `publish.py` (metadados de publicação). |
 | `models/` | Modelo de transcricao (487 MB), **fora do git**. Ver abaixo.  |
+| `sfx/` | Efeitos sonoros curtos (whoosh, pops, clique), **gerados** por `src/vtk/sfx.py gerar`. Únicos `.wav` no git. |
 | `presets/` | Parâmetros por formato (layout, corte, legenda, áudio, imagem), enchimentos em português (`fillers-pt.json`) e limites das plataformas (`publish.json`). |
 | `tests/` | Testes (`python3 -m unittest discover tests`). |
-| `.claude/` | `skills/publicar-video` (como escrever os metadados) e `hooks/guard.py` (bloqueia mídia no git, apagar `.mov`, API paga). |
+| `.claude/` | `skills/publicar-video` (como escrever os metadados), `skills/efeitos-sonoros` (onde pôr cada efeito) e `hooks/guard.py` (bloqueia mídia no git, apagar `.mov`, API paga). |
 | `videos/<nome>/` | Transcrição, lista de cortes, legendas e metadados de cada vídeo. **Fora do git** (o repo é público e o conteúdo não pode vazar antes de o vídeo sair). |
 
 ## Fluxo
@@ -38,7 +39,9 @@ python3 src/vtk/render.py --preset presets/tiktok-vertical.json --video GRAVACAO
   --plan videos/<nome>/plan.json --out render_prev --scale 0.5 --crf 30
 ffmpeg -f concat -safe 0 -i lista.txt -c copy final.mp4
 # 4. áudio: filtros fixos + loudnorm em 2 passadas (-14 LUFS). Redução de ruído desligada no preset (voz robótica)
-python3 src/vtk/postaudio.py --preset presets/tiktok-vertical.json --in final.mp4 --out final_audio.mp4
+#    efeitos sonoros (opcional): videos/<nome>/sfx.json escrito pela skill efeitos-sonoros, revisado com o autor
+python3 src/vtk/postaudio.py --preset presets/tiktok-vertical.json --in final.mp4 --out final_audio.mp4 \
+  [--sfx videos/<nome>/sfx.json]
 # 5. capas: cada formato pode usar um quadro; "variantes" no thumb.json gera vários pares
 python3 src/vtk/thumb.py --video final.mp4 --spec videos/<nome>/thumb.json --out capas/
 python3 src/vtk/thumb.py --video final.mp4 --spec videos/<nome>/thumb.json --out capas/ --sheet 5,20,40,62,95  # folha de candidatos
@@ -64,6 +67,7 @@ Imagem da câmera: `--camera-filter off|natural` no `render.py` (padrão do pres
 - [ ] Zoom leve só na câmera, **opcional** (`cuts.py --zoom` sugere, `"z"` no `plan.json` decide; `render.py` aplica). Falta rodar num vídeo real
 - [ ] Imagem de verificação das emendas (dá para usar a `cut_sheet` da skill sobre o nosso final)
 - [x] Transcrição com tempo por palavra, grátis e local (`transcribe_words.py`, Parakeet TDT v3; resolução 80 ms; erra termos como "IA" → "Ya", revisar o texto)
+- [ ] Efeitos sonoros: biblioteca gerada (`sfx/`), lista por vídeo (`sfx.json`) e mistura no `postaudio.py --sfx`. Testado num trecho do vídeo especialista (-14,07 LUFS, pico -1,41 dBTP). Falta usar num vídeo completo
 - [x] Modelo guardado em `models/` (ignorado pelo git)
 
 ## Modelo de transcrição

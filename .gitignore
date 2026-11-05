@@ -5,6 +5,8 @@
 *.mkv
 *.wav
 *.mp3
+# exceção: efeitos sonoros curtos, gerados por síntese (src/vtk/sfx.py gerar), poucos KB
+!sfx/*.wav
 *.onnx
 *.tar.bz2
 models/

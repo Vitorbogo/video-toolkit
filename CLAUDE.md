@@ -9,5 +9,6 @@ Ferramentas locais (ffmpeg + Python) para vídeos curtos verticais. Fluxo e coma
 
 ## Todo vídeo termina com publicação
 1. Depois de revisar com o autor o `videos/<nome>/plan.json` (rascunho do `cuts.py`), escrever o `videos/<nome>/meta.json` (skill `publicar-video`).
-2. Depois de `postaudio.py` e `thumb.py`, rodar `python3 src/vtk/publish.py --name <nome> --video <final> --capas <pasta>`.
-3. Entregar ao autor o `videos/<nome>/publicar.md` (título, descrição, legenda, hashtags, capa, checklist). Limites de plataforma ficam em `presets/publish.json`, não na conversa.
+2. Efeitos sonoros (skill `efeitos-sonoros`): escrever `videos/<nome>/sfx.json` junto com a revisão do plano e passar `--sfx` ao `postaudio.py`.
+3. Depois de `postaudio.py` e `thumb.py`, rodar `python3 src/vtk/publish.py --name <nome> --video <final> --capas <pasta>`.
+4. Entregar ao autor o `videos/<nome>/publicar.md` (título, descrição, legenda, hashtags, capa, checklist). Limites de plataforma ficam em `presets/publish.json`, não na conversa.
