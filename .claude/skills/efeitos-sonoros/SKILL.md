@@ -25,7 +25,7 @@ Recusados pelo autor: o whoosh longo e o pop que caía de tom ("não gostei"). E
 
 1. `python3 src/vtk/sfx.py marcas --plan videos/<nome>/plan.json` lista o início de cada trecho e de cada
    legenda já no tempo do vídeo final.
-2. Escolha poucos momentos. Pense em um efeito a cada 8 a 15 s, nunca menos de 5 s entre dois (o `checar`
+2. Escolha poucos momentos. Pense em um efeito a cada 8 a 15 s, nunca menos de 3,5 s entre dois (o `checar`
    barra). Não ponha whoosh em todo corte: só onde o assunto muda. Nunca um efeito em cima do gancho dos
    primeiros 2 s se ele cobrir a fala.
 3. Escreva `videos/<nome>/sfx.json`: `[{"t": 11.05, "som": "whoosh-curto"}, ...]`. `t` é o momento em que o som

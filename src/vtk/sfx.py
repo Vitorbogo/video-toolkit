@@ -16,7 +16,7 @@ import argparse, json, os, sys, wave
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SFX_DIR = os.path.join(ROOT, "sfx")
 SR = 48000
-MIN_GAP_S = 5.0  # menos que isso entre efeitos fica carregado (regra da skill)
+MIN_GAP_S = 3.5  # menos que isso entre efeitos fica carregado (regra da skill; era 5, baixou no teste-ilustracao)
 
 # hit = segundos do início do arquivo até o ponto em que o som "bate"; vol = ganho padrão na mistura
 CATALOGO = {
