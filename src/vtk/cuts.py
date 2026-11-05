@@ -6,7 +6,7 @@ Uso:
       [--transcript T] [--edit E] [--preset P] [--zoom [1.1]] [--sem-cenas] [--force]
 Padrões: --transcript videos/<nome>/transcript.json; --edit videos/<nome>/edit.json (se existir);
 --preset videos/<nome>/preset.json (se existir) ou presets/tiktok-vertical.json (fps do canvas, padrão 30).
-Escreve videos/<nome>/plan.json (rascunho: legendas com o texto do Parakeet, REVISAR com o Vitor) e
+Escreve videos/<nome>/plan.json (rascunho: legendas com o texto do Parakeet, REVISAR com o autor) e
 videos/<nome>/edit-plan.md (cada remoção, refeita a partir dos trechos finais, com os motivos). Não sobrescreve
 um plan.json existente sem --force; com --force guarda o anterior em plan.json.bak.
 
@@ -357,7 +357,7 @@ def main():
     print(md.splitlines()[2])
     print(f"ok: {os.path.relpath(pp, ROOT)} e edit-plan.md" + (" (o anterior ficou em plan.json.bak)" if bak else "")
           + (f", com {os.path.relpath(ep, ROOT)}" if edit else ", sem edit.json") + ".")
-    print("Revisar cortes e legendas com o Vitor antes do render; depois escrever o meta.json (skill publicar-video).")
+    print("Revisar cortes e legendas com o autor antes do render; depois escrever o meta.json (skill publicar-video).")
     for w in avisos + ev.WARNINGS: print("  aviso:", w)
 
 

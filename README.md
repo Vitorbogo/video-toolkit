@@ -1,8 +1,8 @@
 # video-toolkit
 
-Ferramentas do Vitor para editar vídeos curtos verticais (TikTok) a partir de uma gravação de tela com a câmera.
-Tudo roda local, só com ffmpeg e Python. Receita e decisões estão no vault do Obsidian
-(`Vídeos/_Receita de Edição de Vídeo.md`).
+Ferramentas para editar vídeos curtos verticais (TikTok) a partir de uma gravação de tela com a câmera.
+Tudo roda local, só com ffmpeg e Python. O contexto de cada autor (pastas, público, decisões de conteúdo) fica num
+`CLAUDE.local.md` fora do git.
 
 ## Estrutura
 
@@ -30,7 +30,7 @@ Requisitos: `ffmpeg` (com `ffprobe`), Python 3 com `Pillow`, `numpy`, `sherpa-on
 python3 src/vtk/transcribe_words.py --video GRAVACAO.mov --name <nome>   # videos/<nome>/transcript.json + .txt
 #    (--audio x.wav no lugar de --video; --out DIR no lugar de --name; --model-dir se o modelo não estiver em models/)
 # 2. cortes decididos pelo engine.py (enchimentos PT, pausas encurtadas, bordas pelo áudio) -> rascunho do
-#    plan.json + edit-plan.md. Revisar cortes e legendas com o Vitor.
+#    plan.json + edit-plan.md. Revisar cortes e legendas com o autor.
 python3 src/vtk/cuts.py --video GRAVACAO.mov --name <nome> [--zoom] [--force]
 #    lê por padrão videos/<nome>/transcript.json, edit.json e preset.json (se existirem)
 #    ajustes no videos/<nome>/edit.json, com tempos da gravação original (sobrevivem ao --force):
@@ -48,7 +48,7 @@ python3 src/vtk/cuts.py --video GRAVACAO.mov --name <nome> [--zoom] [--force]
 # 2b. efeitos sonoros (skill efeitos-sonoros): videos/<nome>/sfx.json, revisado junto com os cortes
 python3 src/vtk/sfx.py marcas --plan videos/<nome>/plan.json     # tempos no vídeo final, para escolher os momentos
 python3 src/vtk/sfx.py checar --sfx videos/<nome>/sfx.json --plan videos/<nome>/plan.json
-# 2c. ilustrações (skill ilustracoes), só quando o vídeo não tem conteúdo visual suficiente ou o Vitor pedir
+# 2c. ilustrações (skill ilustracoes), só quando o vídeo não tem conteúdo visual suficiente ou for pedido
 # 3. prévia e final: retoma de onde parou e refaz só os clipes cujo trecho, preset ou opções mudaram
 #    saída: render/c00.mov... (áudio PCM, sem atraso nas emendas), render/lista.txt e, com todos prontos, render/final.mov
 python3 src/vtk/render.py --preset videos/<nome>/preset.json --video GRAVACAO.mov \

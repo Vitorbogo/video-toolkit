@@ -46,7 +46,7 @@
     "audio_fade_out_s": 0.03
   },
   "subtitles": {
-    "_nota": "desenhada com Pillow (src/vtk/captions.py): frase inteira, palavra falada em 'highlight' (laranja do selo dos slides). Estilo A, escolhido pelo Vitor em 05/11/2026. font_file relativo à raiz.",
+    "_nota": "desenhada com Pillow (src/vtk/captions.py): frase inteira, palavra falada em 'highlight' (laranja do selo dos slides). Estilo A, escolhido em 05/11/2026. font_file relativo à raiz.",
     "font_file": "assets/fonts/Poppins-ExtraBold.ttf",
     "size": 62,
     "outline": 5,
@@ -58,7 +58,7 @@
     "outline_color": "#141B28"
   },
   "audio": {
-    "_nota": "medido no 1o video: voz ~-24 dB, fundo ~-61 dB, 37 dB de folga. Reducao de ruido DESLIGADA: com o microfone do Vitor o afftdn deixava a voz robotica (2o video). Compressor 2:1 do ajuste que ele usou nesse video. So ligar o denoise se aparecer ruido de fundo, comparando antes/depois. pre_limiter 'auto': o postaudio calcula o limite que deixa o loudnorm linear (o 1.0 antigo nao fazia nada e o loudnorm caia no modo dinamico). tp_margin_db: folga de pico para o AAC; o limitador final fica em TP - tp_margin_db e o resultado e medido.",
+    "_nota": "medido no 1o video: voz ~-24 dB, fundo ~-61 dB, 37 dB de folga. Reducao de ruido DESLIGADA: com o microfone usado o afftdn deixava a voz robotica (2o video). Compressor 2:1 do ajuste que ele usou nesse video. So ligar o denoise se aparecer ruido de fundo, comparando antes/depois. pre_limiter 'auto': o postaudio calcula o limite que deixa o loudnorm linear (o 1.0 antigo nao fazia nada e o loudnorm caia no modo dinamico). tp_margin_db: folga de pico para o AAC; o limitador final fica em TP - tp_margin_db e o resultado e medido.",
     "highpass_hz": 80,
     "denoise": {
       "enabled": false,

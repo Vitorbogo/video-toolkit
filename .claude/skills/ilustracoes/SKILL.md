@@ -1,6 +1,6 @@
 ---
 name: ilustracoes
-description: Cria ilustrações animadas (HTML + GSAP, renderizadas com HyperFrames) que entram no lugar do slide num vídeo do video-toolkit. Usar quando o vídeo não tiver conteúdo visual suficiente (só câmera, slide parado demais, conceito difícil de ver), quando o Vitor pedir ilustração, animação, desenho ou "algo na tela", ou ao retomar um vídeo que tem videos/<nome>/ilustracao/.
+description: Cria ilustrações animadas (HTML + GSAP, renderizadas com HyperFrames) que entram no lugar do slide num vídeo do video-toolkit. Usar quando o vídeo não tiver conteúdo visual suficiente (só câmera, slide parado demais, conceito difícil de ver), quando pedirem ilustração, animação, desenho ou "algo na tela", ou ao retomar um vídeo que tem videos/<nome>/ilustracao/.
 ---
 
 # Ilustrações animadas
@@ -11,7 +11,7 @@ põe no lugar do slide recortado. Ela segue a fala: cada coisa aparece na palavr
 ## Quando usar
 
 - O vídeo não tem conteúdo visual suficiente: só câmera, ou um slide parado por muito tempo.
-- O Vitor pediu.
+- Foi pedido.
 - Não use só para enfeitar um vídeo que já tem gravação de tela com conteúdo. Na dúvida, proponha e deixe ele decidir.
 
 ## Ferramenta
@@ -30,10 +30,10 @@ parte do fluxo. Mantenha a versão fixada: a Apache 2.0 da 0.9.16 não pode ser 
 ## Passos
 
 1. **Proposta** (junto com a revisão dos cortes, passo 4 da `editar-video`). Rode
-   `python3 src/vtk/sfx.py marcas --plan videos/<nome>/plan.json` para ter os tempos no vídeo final. Escreva para o
-   Vitor uma lista: frase falada (com o tempo), o que aparece, como entra. Texto, números e valores na tela são
-   conteúdo: ele aprova como aprova a legenda. Nada de dado inventado apresentado como real.
-   👀 Ele aprova, corta ou muda. **Pronto quando** a lista está aprovada.
+   `python3 src/vtk/sfx.py marcas --plan videos/<nome>/plan.json` para ter os tempos no vídeo final. Escreva
+   uma lista: frase falada (com o tempo), o que aparece, como entra. Texto, números e valores na tela são
+   conteúdo: são aprovados como a legenda. Nada de dado inventado apresentado como real.
+   👀 Espere a confirmação: aprovar, cortar ou mudar. **Pronto quando** a lista está aprovada.
 2. **Projeto.** Em `videos/<nome>/ilustracao/` (fora do git):
    `npx hyperframes@0.9.16 init ilustracao --example blank --non-interactive --skip-skills --resolution square`.
    Depois troque o `index.html` partindo de `presets/ilustracao/exemplo-planilha.html`, e copie as fontes Poppins
@@ -47,7 +47,7 @@ parte do fluxo. Mantenha a versão fixada: a Apache 2.0 da 0.9.16 não pode ser 
 5. **Renderizar.** `npx hyperframes@0.9.16 render -o ../ilustracao.mp4` (~10 s para 20 s de vídeo).
 6. **Montar.** `render.py ... --painel videos/<nome>/ilustracao.mp4` (prévia e final). Vídeo só de câmera: o preset
    do vídeo mede o `camera_crop` em volta do rosto. O `slide_crop` não é usado com `--painel`, mas precisa caber no
-   quadro. 👀 A prévia vai para o Vitor como sempre.
+   quadro. 👀 A prévia vai para revisão como sempre.
 
 ## Estilo (aprovado em 05/11/2026, vídeo "teste ilustração")
 
@@ -56,14 +56,14 @@ parte do fluxo. Mantenha a versão fixada: a Apache 2.0 da 0.9.16 não pode ser 
   `#3DDC84` para "deu certo", vermelho `#FF5A4F` para erro ou raiva.
 - Personagens e reações: Fluent Emoji 3D da Microsoft (MIT), baixados de
   `https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/<Nome>/3D/<nome>_3d.png` (com tom de pele:
-  `<Nome>/Default/3D/<nome>_3d_default.png`). Não desenhe rosto em SVG à mão: o Vitor achou feio.
+  `<Nome>/Default/3D/<nome>_3d_default.png`). Não desenhe rosto em SVG à mão: ficou feio e foi recusado.
 - Entradas curtas (0,3–0,5 s, `back.out`), um elemento por vez, sem nada se mexendo enquanto ele explica outra coisa.
   Tremida só para raiva ou erro.
 
 ## Armadilhas
 
 - **Aparecer antes da hora.** O elemento entra na palavra que o nomeia, não no começo da frase. No teste, a
-  planilha entrou em "trabalho" e o Vitor notou: o certo era em "planilha".
+  planilha entrou em "trabalho" e a revisão pegou: o certo era em "planilha".
 - **Efeito sonoro junto.** Se a ilustração tem um momento forte (algo aparece, alguém grita), combine com a skill
   `efeitos-sonoros` no mesmo tempo. Mínimo de 3,5 s entre efeitos.
 - **A ilustração segue o vídeo final.** Se os cortes mudarem depois (`cuts.py --force`), os tempos mudam: rode o

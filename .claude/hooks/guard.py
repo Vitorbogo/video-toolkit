@@ -20,11 +20,11 @@ HOSTS = ["api.openai.com", "api.groq.com", "api.anthropic.com", "generativelangu
          "speech.googleapis.com", "api.deepgram.com", "api.assemblyai.com"]
 
 M_GIT = "Midia e modelos nunca entram no git (o repo e publico)."
-M_MOV = "Nao apague nem descarte gravacao original (.mov). So depois do video publicado, e a pedido do Vitor."
-M_UP = "Nao envie audio/video (nem videos/) para fora do computador sem o Vitor pedir."
-M_API = "Transcricao e edicao sao locais e gratis neste projeto. Nada de API paga sem o Vitor pedir."
+M_MOV = "Nao apague nem descarte gravacao original (.mov). So depois do video publicado, e a pedido do autor."
+M_UP = "Nao envie audio/video (nem videos/) para fora do computador sem pedido explicito."
+M_API = "Transcricao e edicao sao locais e gratis neste projeto. Nada de API paga sem pedido explicito."
 M_HF = ("HyperFrames: so o render local e gratis (init, lint, snapshot, render, docs, preview). Login, creditos, nuvem e "
-        "templates/skills Pro da HeyGen sao pagos ou mandam coisas para fora: so com o Vitor pedindo.")
+        "templates/skills Pro da HeyGen sao pagos ou mandam coisas para fora: so com pedido explicito.")
 
 REGRAS = [
     (GIT_ADD + S + r"\s(?:(?-i:-[a-zA-Z]*f[a-zA-Z]*)|--force)" + FIM, "git add --force passa por cima do .gitignore. " + M_GIT),

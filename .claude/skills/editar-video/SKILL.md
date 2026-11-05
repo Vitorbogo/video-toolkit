@@ -1,17 +1,17 @@
 ---
 name: editar-video
-description: Roteiro do agente para editar um vídeo do video-toolkit, da gravação (.mov) ao publicar.md. Usar quando o Vitor trouxer uma gravação nova, ou pedir para cortar, legendar, renderizar, prévia, tratar o áudio, fazer capa ou retomar a edição de um vídeo.
+description: Roteiro do agente para editar um vídeo do video-toolkit, da gravação (.mov) ao publicar.md. Usar quando chegar uma gravação nova, ou pedir para cortar, legendar, renderizar, prévia, tratar o áudio, fazer capa ou retomar a edição de um vídeo.
 ---
 
 # Editar um vídeo (gravação → publicar.md)
 
-O Vitor não roda nada: você roda tudo e para nos **pontos de revisão** (marcados 👀) para ele decidir. Comandos e flags exatos: bloco "Fluxo" do `README.md` (leia antes de começar). Esta skill diz a ordem, quando um passo está pronto e as armadilhas que o código não conta.
+O autor não roda nada: você roda tudo e para nos **pontos de revisão** (marcados 👀) para ele decidir. Comandos e flags exatos: bloco "Fluxo" do `README.md` (leia antes de começar). Esta skill diz a ordem, quando um passo está pronto e as armadilhas que o código não conta.
 
-`<nome>` é um apelido curto do vídeo (ex.: `instrucoes`). Toda saída vai para `videos/<nome>/` (fora do git). O original fica na pasta do vídeo no vault: `Vídeos/<Título do Vídeo>/<gravação>.mov`.
+`<nome>` é um apelido curto do vídeo (ex.: `instrucoes`). Toda saída vai para `videos/<nome>/` (fora do git). O original fica na pasta de arquivos do vídeo indicada no `CLAUDE.local.md`; sem ela, pergunte onde está.
 
 ## Passos
 
-1. **Ambiente.** Confira `ffmpeg -version`, `ffprobe -version` e `python3 -c "import PIL, numpy, sherpa_onnx, mediapipe"`, e os modelos `models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8/` e `models/face_landmarker.task` (como baixar: README, "Modelo de transcrição"). O que faltar, instale (`pip install ...`; no Mac, `brew install ffmpeg`) e diga ao Vitor o que instalou. **Pronto quando** os quatro comandos rodam sem erro.
+1. **Ambiente.** Confira `ffmpeg -version`, `ffprobe -version` e `python3 -c "import PIL, numpy, sherpa_onnx, mediapipe"`, e os modelos `models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8/` e `models/face_landmarker.task` (como baixar: README, "Modelo de transcrição"). O que faltar, instale (`pip install ...`; no Mac, `brew install ffmpeg`) e avise o que instalou. **Pronto quando** os quatro comandos rodam sem erro.
 
 2. **Preset do vídeo.** Extraia quadros da gravação (ex.: 5 s, 30 s, meio, fim) e olhe cada um. Meça a janela da câmera e o painel do slide/tela (`largura, altura, x, y` em pixels da gravação) e a resolução. Escreva `videos/<nome>/preset.json` só com o que muda:
    `{"base": "presets/tiktok-vertical.json", "source": {"w": .., "h": .., "camera_crop": [..], "slide_crop": [..]}}`.
@@ -21,19 +21,19 @@ O Vitor não roda nada: você roda tudo e para nos **pontos de revisão** (marca
 
 4. **Cortes.** Ponha as decisões no `videos/<nome>/edit.json`, a fonte única de decisões à mão: `replace` (correções da legenda, vale com várias palavras), `cut`, `keep`, `trim`, `zoom`, `blur` (chaves e formato: docstring do `src/vtk/cuts.py`). Rode `cuts.py --video ... --name <nome>`.
    - **Dado sensível na tela** (títulos de conversas, e-mails, nomes de clientes, abas): olhe os quadros da área da tela ao longo do vídeo e cubra com `blur` (tempos e pixels da gravação original).
-   - Zoom fica desligado; só se o Vitor achar as emendas bruscas.
-   - 👀 **Revisão 1:** mostre ao Vitor o `edit-plan.md` (o que saiu e por quê, avisos, possíveis retomadas) e o texto das legendas. Palavra não entendida: pergunte, nunca invente. Ajuste o `edit.json` e rode de novo com `--force` até ele aprovar.
-   - Na mesma revisão, proponha os **efeitos sonoros** (skill `efeitos-sonoros`, `videos/<nome>/sfx.json`) e, se o vídeo não tiver conteúdo visual suficiente ou o Vitor pedir, as **ilustrações** (skill `ilustracoes`). Cada item com a frase em que entra.
+   - Zoom fica desligado; só se o autor achar as emendas bruscas.
+   - 👀 **Revisão 1:** mostre o `edit-plan.md` (o que saiu e por quê, avisos, possíveis retomadas) e o texto das legendas. Palavra não entendida: pergunte, nunca invente. Ajuste o `edit.json` e rode de novo com `--force` até a aprovação.
+   - Na mesma revisão, proponha os **efeitos sonoros** (skill `efeitos-sonoros`, `videos/<nome>/sfx.json`) e, se o vídeo não tiver conteúdo visual suficiente ou for pedido, as **ilustrações** (skill `ilustracoes`). Cada item com a frase em que entra.
    - Logo depois da aprovação, escreva o `meta.json` (skill `publicar-video`).
-   **Pronto quando** o Vitor aprovou cortes e legendas.
+   **Pronto quando** cortes e legendas estão aprovados.
 
-5. **Prévia** (`render.py ... --out videos/<nome>/render_prev --scale 0.5 --crf 30`, mais `--painel videos/<nome>/ilustracao.mp4` se houver ilustração). Ela sai em `render_prev/final.mov`. Olhe alguns quadros (borrão no lugar, legenda inteira dentro da tela, rosto enquadrado). 👀 **Revisão 2:** passe ao Vitor o caminho da prévia para ele assistir com fones. **Pronto quando** ele aprovou; mudanças voltam ao `edit.json` (passo 4).
+5. **Prévia** (`render.py ... --out videos/<nome>/render_prev --scale 0.5 --crf 30`, mais `--painel videos/<nome>/ilustracao.mp4` se houver ilustração). Ela sai em `render_prev/final.mov`. Olhe alguns quadros (borrão no lugar, legenda inteira dentro da tela, rosto enquadrado). 👀 **Revisão 2:** passe o caminho da prévia para ser assistida com fones. **Pronto quando** a prévia está aprovada; mudanças voltam ao `edit.json` (passo 4).
 
 6. **Final.** `render.py` sem `--scale`, em `videos/<nome>/render`. Depois `postaudio.py --in videos/<nome>/render/final.mov --out videos/<nome>/final.mp4` (com `--sfx videos/<nome>/sfx.json` se houver efeitos). **Pronto quando** o `postaudio.py` termina com `ok` (-14 LUFS, pico ≤ -1,5 dBTP, `normalization_type=linear`).
 
-7. **Capa.** `rosto.py --video videos/<nome>/final.mp4 --name <nome>` e olhe o `rosto_candidatos.jpg`. Escreva o `thumb.json` (textos do vídeo, `"tempo_s": "auto"` e `"rosto_x": "auto"` nas variantes) e rode o `thumb.py`. 👀 **Revisão 3:** mostre as capas de `videos/<nome>/capas/` ao Vitor. Ele escolhe a variante: atualize `capa` no `meta.json` (sem "PROVISÓRIA"). **Pronto quando** a capa está escolhida.
+7. **Capa.** `rosto.py --video videos/<nome>/final.mp4 --name <nome>` e olhe o `rosto_candidatos.jpg`. Escreva o `thumb.json` (textos do vídeo, `"tempo_s": "auto"` e `"rosto_x": "auto"` nas variantes) e rode o `thumb.py`. 👀 **Revisão 3:** mostre as capas de `videos/<nome>/capas/` e espere a escolha da variante: atualize `capa` no `meta.json` (sem "PROVISÓRIA"). **Pronto quando** a capa está escolhida.
 
-8. **Publicar.** Rode `publish.py --name <nome> --video videos/<nome>/final.mp4` até sair sem `ERRO`. Copie para a pasta do vídeo no vault: `final.mp4` como `<Título curto> - FINAL.mp4`, as capas em `capas/`, e o `publicar.md` como `PUBLICAR - <Título>.md`. **Pronto quando** os três estão no vault e você entregou ao Vitor o `publicar.md`.
+8. **Publicar.** Rode `publish.py --name <nome> --video videos/<nome>/final.mp4` até sair sem `ERRO`. Se o `CLAUDE.local.md` indicar uma pasta de arquivos do vídeo, copie para ela: `final.mp4` como `<Título curto> - FINAL.mp4`, as capas em `capas/`, e o `publicar.md` como `PUBLICAR - <Título>.md`. **Pronto quando** os arquivos estão copiados (se houver pasta) e você entregou o `publicar.md`.
 
 ## Armadilhas
 

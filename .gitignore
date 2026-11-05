@@ -48,5 +48,8 @@ transcript.txt
 .DS_Store
 __pycache__/
 
+# contexto pessoal do autor (pastas, público, decisões de conteúdo)
+CLAUDE.local.md
+
 # conteúdo de cada vídeo (transcrição, cortes, metadados, capas, render) fica local: o repo é público
 videos/

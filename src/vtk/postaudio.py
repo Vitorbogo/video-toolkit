@@ -2,7 +2,7 @@
 """Tratamento de audio deterministico, em 2 passadas, sobre o video ja montado.
 
 Cadeia (ordem fixa, parametros no preset): filtro de graves -> reducao de ruido (afftdn, DESLIGADA no
-preset: deixava a voz robotica com o microfone do Vitor) -> compressor suave -> pre-limitador -> loudnorm medido
+preset: deixava a voz robotica com o microfone usado) -> compressor suave -> pre-limitador -> loudnorm medido
 (passada 1) e aplicado LINEAR (passada 2: ganho fixo, sem bombear) -> limitador final.
 O video e copiado sem recodificar; o audio sai em AAC 48 kHz. Aceita o final.mov do render.py (h264 + PCM).
 
