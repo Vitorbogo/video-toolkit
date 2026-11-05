@@ -8,11 +8,17 @@ Uso:
 Retoma de onde parou (pula clipes ja prontos). --budget limita o tempo por execucao (s).
 Depois: ffmpeg -f concat ... -c copy final.mp4 e vtk/postaudio.py para o audio.
 
+Legenda: desenhada com Pillow (src/vtk/captions.py), a frase inteira com a palavra falada em destaque
+("highlight" no preset). O ffmpeg do Mac nao tem libass, entao nada de .ass/subtitles aqui.
+
 Zoom (opcional): um trecho do plan.json com "z": 1.1 aproxima so a janela da camera (slide e legenda
 nao mudam). Sem "z", ou "z": 1, o trecho sai sem zoom. Maximo 1.2 (regra da skill). O zoom de cada clipe
 fica em cNN.z: se o "z" do trecho mudar, o clipe e refeito sozinho.
 """
-import argparse, importlib.util, json, os, subprocess, sys, textwrap, time
+import argparse, importlib.util, json, os, subprocess, sys, time
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from vtk import captions
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _m = importlib.util.spec_from_file_location("edit_video", os.path.join(ROOT, "vendor/dev-video-editing/scripts/edit_video.py"))
@@ -31,10 +37,6 @@ def zoom_crop(crop, z, eye=EYE_LINE):
     return [w2, h2, x + (w - w2) // 2, y + int(eye * (h - h2))]
 
 
-def ts(t):
-    return f"{int(t//3600)}:{int(t%3600//60):02d}:{t%60:05.2f}"
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--preset", required=True); ap.add_argument("--video", required=True)
@@ -44,7 +46,7 @@ def main():
     ap.add_argument("--camera-filter", default=None, help="off|natural (padrao: o do preset)")
     a = ap.parse_args()
 
-    # o ffmpeg roda com cwd=a.out (por causa do .ass da legenda): caminhos relativos quebravam
+    # o ffmpeg roda com cwd=a.out: caminhos relativos quebravam
     a.out, a.video = os.path.abspath(a.out), os.path.abspath(a.video)
     P = json.load(open(a.preset)); plan = json.load(open(a.plan)); os.makedirs(a.out, exist_ok=True)
     K = a.scale
@@ -58,22 +60,6 @@ def main():
     cf = P["camera_filter"].get(cf_mode, "")
     cam_extra = ("," + cf) if cf else ""
 
-    def wrap(t):
-        return "\\N".join(textwrap.wrap(t, SUB["max_chars_per_line"], break_long_words=False))
-
-    def chunks(x0, x1, t):
-        parts, cur = [], []
-        for w in t.split():
-            if len(" ".join(cur + [w])) > SUB["max_chars_per_event"] and cur:
-                parts.append(" ".join(cur)); cur = [w]
-            else:
-                cur.append(w)
-        if cur: parts.append(" ".join(cur))
-        tot = sum(len(p) for p in parts); out = []; x = x0
-        for p in parts:
-            d = (x1 - x0) * len(p) / tot; out.append((x, x + d, p)); x += d
-        return out
-
     t0 = time.time(); cf_info = f"camera_filter={cf_mode}"
     for n, c in enumerate(plan):
         f, zf = f"{a.out}/c{n:02d}.mp4", f"{a.out}/c{n:02d}.z"
@@ -83,15 +69,8 @@ def main():
         feito = float(open(zf).read()) if os.path.exists(zf) else 1.0  # clipe sem cNN.z = sem zoom
         if os.path.exists(f) and feito == z: continue
         if time.time() - t0 > a.budget: print("orcamento de tempo"); break
-        ass = f"{a.out}/c{n:02d}.ass"
-        with open(ass, "w", encoding="utf-8") as fh:
-            fh.write("[Script Info]\nScriptType: v4.00+\nPlayResX: %d\nPlayResY: %d\nWrapStyle: 2\n\n" % (cv["w"], cv["h"]))
-            fh.write("[V4+ Styles]\nFormat: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding\n")
-            fh.write(f"Style: Default,{SUB['font']},{SUB['size']},{SUB['primary']},{SUB['primary']},{SUB['outline_color']},&H00000000,{-1 if SUB['bold'] else 0},0,0,0,100,100,0,0,1,{SUB['outline']},0,2,90,90,{SUB['margin_v']},1\n\n")
-            fh.write("[Events]\nFormat: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text\n")
-            for (x0, x1, t) in c["ev"]:
-                for (u, v, p) in chunks(x0, x1, t):
-                    fh.write(f"Dialogue: 0,{ts(u)},{ts(v)},Default,,0,0,0,,{wrap(p)}\n")
+        lista, alt = captions.overlay(c, a.out, f"c{n:02d}-leg", SUB, W, K)
+        leg_y = H - ev(SUB["margin_v"]) - alt
         d = c["e"] - c["s"]
         cw, ch, cx, cy = zoom_crop(S["camera_crop"], z)
         fg = (f"color=c={cv['bg']}:s={W}x{H}:r={cv['fps']}[bg];"
@@ -99,10 +78,10 @@ def main():
               f"[a]crop={cw}:{ch}:{cx}:{cy},scale={W}:{cam_h}{cam_extra}[cam];"
               f"[b]crop={sw}:{sh}:{sx}:{sy},scale={sl_w}:{sl_h}[sl];"
               f"[bg][cam]overlay=0:{cam_y}[t1];[t1][sl]overlay={sl_x}:{sl_y}[t2];"
-              f"[t2]subtitles={os.path.basename(ass)}:fontsdir={SUB['fontsdir']}[v]")
+              f"[1:v]fps={cv['fps']},format=rgba[leg];[t2][leg]overlay=0:{leg_y}:eof_action=pass[v]")
         cut = P["cut"]
         cmd = ["ffmpeg", "-v", "error", "-y", "-ss", str(c["s"]), "-t", str(d), "-i", a.video,
-               "-filter_complex", fg, "-map", "[v]", "-map", "0:a",
+               "-f", "concat", "-safe", "0", "-i", lista, "-filter_complex", fg, "-map", "[v]", "-map", "0:a",
                "-af", f"afade=t=in:d={cut['audio_fade_in_s']},afade=t=out:st={d-cut['audio_fade_out_s']:.3f}:d={cut['audio_fade_out_s']}",
                "-c:v", "libx264", "-preset", "veryfast", "-crf", str(a.crf), "-pix_fmt", "yuv420p",
                "-c:a", "aac", "-b:a", "192k", "-t", str(d), f]

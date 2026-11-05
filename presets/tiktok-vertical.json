@@ -1,15 +1,38 @@
 {
   "name": "tiktok-vertical",
   "descricao": "Gravação de tela com janela da câmera à direita e slide à esquerda -> 9:16 com rosto em cima, slide no meio, legenda embaixo.",
-  "canvas": { "w": 1080, "h": 1920, "fps": 30, "bg": "0x141B2D" },
+  "canvas": {
+    "w": 1080,
+    "h": 1920,
+    "fps": 30,
+    "bg": "0x141B2D"
+  },
   "source": {
     "_nota": "crop = largura:altura:x:y na gravação original (2518x1726). MEDIR DE NOVO se as janelas mudarem de lugar.",
-    "camera_crop": [1231, 692, 1287, 461],
-    "slide_crop": [1157, 1115, 0, 430]
+    "camera_crop": [
+      1231,
+      692,
+      1287,
+      461
+    ],
+    "slide_crop": [
+      1157,
+      1115,
+      0,
+      430
+    ]
   },
   "layout": {
-    "camera": { "y": 120, "h": 607 },
-    "slide": { "x": 99, "y": 745, "w": 882, "h": 850 }
+    "camera": {
+      "y": 120,
+      "h": 607
+    },
+    "slide": {
+      "x": 99,
+      "y": 745,
+      "w": 882,
+      "h": 850
+    }
   },
   "cut": {
     "silence_noise_db": -35,
@@ -21,18 +44,38 @@
     "audio_fade_out_s": 0.03
   },
   "subtitles": {
-    "font": "Liberation Sans", "fontsdir": "/usr/share/fonts/truetype/liberation2",
-    "size": 60, "bold": true, "outline": 5, "margin_v": 140,
-    "max_chars_per_line": 30, "max_chars_per_event": 60,
-    "primary": "&H00FFFFFF", "outline_color": "&H00281B14"
+    "_nota": "desenhada com Pillow (src/vtk/captions.py): frase inteira, palavra falada em 'highlight' (laranja do selo dos slides). Estilo A, escolhido pelo autor em 05/11/2026.",
+    "font_file": "vendor/dev-video-editing/fonts/Poppins-ExtraBold.ttf",
+    "size": 62,
+    "outline": 5,
+    "margin_v": 140,
+    "max_chars_per_line": 26,
+    "max_chars_per_event": 52,
+    "color": "#FFFFFF",
+    "highlight": "#F5A623",
+    "outline_color": "#141B28"
   },
   "audio": {
     "_nota": "medido no 1o video: voz ~-24 dB, fundo ~-61 dB, 37 dB de folga. Reducao de ruido DESLIGADA: o afftdn deixava a voz robotica (2o video). Compressor 2:1 e pre_limiter 1.0 sao os do ajuste que ele usou nesse video. So ligar o denoise se aparecer ruido de fundo, comparando antes/depois.",
     "highpass_hz": 80,
-    "denoise": { "enabled": false, "nr_db": 0, "noise_floor_db": -60 },
-    "compressor": { "threshold_linear": 0.06, "ratio": 2, "attack_ms": 20, "release_ms": 250, "makeup": 1 },
+    "denoise": {
+      "enabled": false,
+      "nr_db": 0,
+      "noise_floor_db": -60
+    },
+    "compressor": {
+      "threshold_linear": 0.06,
+      "ratio": 2,
+      "attack_ms": 20,
+      "release_ms": 250,
+      "makeup": 1
+    },
     "pre_limiter": 1.0,
-    "loudnorm": { "I": -14, "TP": -1.5, "LRA": 11 },
+    "loudnorm": {
+      "I": -14,
+      "TP": -1.5,
+      "LRA": 11
+    },
     "limiter": 0.84,
     "bitrate": "160k"
   },

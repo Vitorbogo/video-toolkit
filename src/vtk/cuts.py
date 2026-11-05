@@ -4,7 +4,8 @@
 Uso:
   python3 src/vtk/cuts.py --video GRAVACAO.mov --transcript work/transcript.json --name <nome>
       [--edit videos/<nome>/edit.json] [--zoom [1.1]] [--sem-cenas] [--force]
-Escreve videos/<nome>/plan.json (rascunho: legendas com o texto do Parakeet, REVISAR) e
+Escreve videos/<nome>/plan.json (rascunho: legendas com o texto do Parakeet, REVISAR; "wt" guarda o inicio de
+cada palavra para o destaque da legenda, e editar o texto de um evento nao quebra nada: o render estima) e
 videos/<nome>/edit-plan.md (cada remocao com o motivo). Nao sobrescreve um plan.json existente sem --force.
 edit.json (opcional) usa as chaves da skill: style, pauses, cut, keep, replace, extra_fillers...
 'cut' so tira palavras inteiras dentro do intervalo (trecho sem palavra nao some por ele). Rodar de novo com --force
@@ -24,15 +25,17 @@ FILLERS_PT = {k: v for k, v in json.load(open(os.path.join(ROOT, "presets/filler
 
 
 def captions(ws, s, max_chars):
-    """Palavras mantidas de um trecho -> [[x0, x1, texto]] relativos ao inicio do trecho."""
-    out, cur = [], []
+    """Palavras mantidas de um trecho -> ([[x0, x1, texto]], [[inicio de cada palavra]]), relativos ao trecho.
+    O segundo vai no "wt" do plan.json: o render.py destaca a palavra falada com ele."""
+    out, wt, cur = [], [], []
     for i, w in enumerate(ws):
         cur.append(w)
         fim = i + 1 == len(ws) or w["w"][-1:] in ".?!" or len(" ".join(x["w"] for x in cur + [ws[i + 1]])) > max_chars
         if fim:
             out.append([round(max(0.0, cur[0]["start"] - s), 3), round(cur[-1]["end"] - s, 3), " ".join(x["w"] for x in cur)])
+            wt.append([round(max(0.0, x["start"] - s), 3) for x in cur])
             cur = []
-    return out
+    return out, wt
 
 
 def exclude(words, reason, spans, fps):
@@ -71,7 +74,8 @@ def decide(words, edit, total, fps=30.0, db=(), floor=-60.0, blacks=(), scenes=(
     for s, e in spans:
         ws = [dict(w, w=vendor.apply_replace(w["w"], rep), end=min(w["end"], e)) for w, r in zip(words, reason)
               if r is None and s <= w["start"] < e]
-        plan.append({"s": s, "e": e, "ev": captions(ws, s, max_chars)})
+        ev, wt = captions(ws, s, max_chars)
+        plan.append({"s": s, "e": e, "ev": ev, "wt": wt})
     if zoom > 1:
         zs = vendor.zoom_plan(spans, {"style": spec.get("style", "youtube"), "punch_in": zoom}, list(scenes), list(blacks))
         for c, z in zip(plan, zs):

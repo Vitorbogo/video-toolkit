@@ -9,7 +9,7 @@ Tudo roda local, só com ffmpeg e Python. Receita e decisões estão no vault do
 | Pasta | O que tem |
 |-------|-----------|
 | `vendor/dev-video-editing/` | Skill de terceiros (MIT), **sem modificações**. Decide cortes com tempo por palavra, enchimentos, repetições, punch-ins. Ver `VENDOR.md`. |
-| `src/vtk/` | Nossos scripts: `seg.py`, `transcribe_words.py` (tempo por palavra, gratis), `transcribe_sherpa.py` (por trecho, antigo), `cuts.py` (cortes pela skill de terceiros → `plan.json`), `render.py`, `postaudio.py` (com `--sfx`), `sfx.py` (efeitos sonoros), `thumb.py`, `publish.py` (metadados de publicação). |
+| `src/vtk/` | Nossos scripts: `seg.py`, `transcribe_words.py` (tempo por palavra, gratis), `transcribe_sherpa.py` (por trecho, antigo), `cuts.py` (cortes pela skill de terceiros → `plan.json`), `render.py` (legenda via `captions.py`), `postaudio.py` (com `--sfx`), `sfx.py` (efeitos sonoros), `thumb.py`, `publish.py` (metadados de publicação). |
 | `models/` | Modelo de transcricao (487 MB), **fora do git**. Ver abaixo.  |
 | `sfx/` | Efeitos sonoros curtos (whoosh, pops, clique), **gerados** por `src/vtk/sfx.py gerar`. Únicos `.wav` no git. |
 | `presets/` | Parâmetros por formato (layout, corte, legenda, áudio, imagem), enchimentos em português (`fillers-pt.json`) e limites das plataformas (`publish.json`). |
@@ -55,6 +55,7 @@ Imagem da câmera: `--camera-filter off|natural` no `render.py` (padrão do pres
 ## Estado (v0.1)
 
 - [x] Layout 9:16 (rosto, slide, legenda) a partir de preset
+- [x] Legenda desenhada com Pillow (`captions.py`, o ffmpeg do Mac não tem libass): frase inteira, palavra falada em laranja (estilo A, escolhido em 05/11/2026). O `cuts.py` grava o início de cada palavra em `"wt"` no `plan.json`; texto editado na revisão ou plano antigo cai numa estimativa pelo tamanho da palavra
 - [x] Áudio determinístico em 2 passadas: **-14 LUFS, pico ~-1,4 dBTP** (medido no 1º vídeo, com a cadeia antiga)
 - [ ] Cadeia de áudio nova como padrão: sem redução de ruído (o `afftdn` deixava a voz robótica), compressor 2:1 e `pre_limiter` 1.0, o ajuste usado no 2º vídeo. Falta medir LUFS/pico com ela
 - [x] Tratamento leve de imagem da câmera (opcional)
