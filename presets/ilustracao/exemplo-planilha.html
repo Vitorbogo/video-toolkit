@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=882, height=850" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Poppins"; font-weight: 700; src: url("assets/Poppins-Bold.ttf"); }
+      @font-face { font-family: "Poppins"; font-weight: 800; src: url("assets/Poppins-ExtraBold.ttf"); }
+      :root {
+        --ground: #141b2d;
+        --card: #1e2740;
+        --line: #2c3757;
+        --ink: #ffffff;
+        --muted: #8c97b5;
+        --orange: #f5a623;
+        --red: #ff5a4f;
+        --green: #3ddc84;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 882px; height: 850px; overflow: hidden; background: var(--ground); }
+      #root { position: relative; width: 882px; height: 850px; font-family: "Poppins", sans-serif; color: var(--ink); }
+
+      /* planilha */
+      #sheet { position: absolute; left: 61px; top: 170px; width: 760px; height: 470px; background: var(--card);
+               border-radius: 22px; border: 2px solid var(--line); overflow: hidden; }
+      .bar { height: 56px; background: #263052; display: flex; align-items: center; padding: 0 22px; gap: 10px; }
+      .dot { width: 14px; height: 14px; border-radius: 50%; background: #3a4670; }
+      .fname { margin-left: 14px; font-size: 22px; font-weight: 700; color: var(--muted); }
+      .fx { height: 54px; display: flex; align-items: center; padding: 0 22px; gap: 16px; border-bottom: 2px solid var(--line);
+            font-size: 24px; font-weight: 700; }
+      .fx .lbl { color: var(--muted); font-style: italic; }
+      #formula { color: var(--orange); min-width: 10px; }
+      table { width: 100%; border-collapse: collapse; font-size: 28px; font-weight: 700; }
+      td { height: 58px; border-bottom: 2px solid var(--line); padding: 0 22px; }
+      td.n { width: 64px; color: var(--muted); text-align: center; border-right: 2px solid var(--line); font-size: 22px; }
+      td.v { text-align: right; position: relative; }
+      td.v span { position: relative; z-index: 1; }
+      .hl { position: absolute; inset: 6px 10px; border-radius: 10px; background: rgba(245, 166, 35, 0.22);
+            border: 3px solid var(--orange); opacity: 0; }
+      tr.total td { border-bottom: none; color: var(--orange); font-size: 32px; font-weight: 800; }
+
+      /* chefe */
+      #boss { position: absolute; right: 20px; top: 0px; width: 280px; height: 280px; z-index: 5; }
+      #boss img { position: absolute; }
+      #worker { left: 0; top: 0; width: 280px; height: 280px; }
+      #angry { left: 66px; top: 4px; width: 154px; height: 154px; }
+      #anger { left: -10px; top: 0px; width: 92px; height: 92px; }
+      #fast { position: absolute; left: 0; right: 0; bottom: 34px; text-align: center; font-size: 46px; font-weight: 800;
+              color: var(--green); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="19.2" data-width="882" data-height="850">
+      <div id="sheet" class="clip" data-start="0" data-duration="19.2" data-track-index="0">
+        <div class="bar"><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          <div class="fname">planilha_do_chefe.xlsx</div></div>
+        <div class="fx"><span class="lbl">fx</span><span id="formula"></span></div>
+        <table>
+          <tr class="row"><td class="n">1</td><td>Janeiro</td><td class="v"><div class="hl"></div><span>R$ 8.240</span></td></tr>
+          <tr class="row"><td class="n">2</td><td>Fevereiro</td><td class="v"><div class="hl"></div><span>R$ 7.910</span></td></tr>
+          <tr class="row"><td class="n">3</td><td>Março</td><td class="v"><div class="hl"></div><span>R$ 9.375</span></td></tr>
+          <tr class="row"><td class="n">4</td><td>Abril</td><td class="v"><div class="hl"></div><span>R$ 6.820</span></td></tr>
+          <tr class="row"><td class="n">5</td><td>Maio</td><td class="v"><div class="hl"></div><span>R$ 10.455</span></td></tr>
+          <tr class="row total"><td class="n">6</td><td>Total</td><td class="v"><span id="total">?</span></td></tr>
+        </table>
+      </div>
+
+      <div id="boss" class="clip" data-start="0" data-duration="19.2">
+        <img id="worker" src="assets/man_office_worker_3d_default.png" />
+        <img id="angry" src="assets/face_with_symbols_on_mouth_3d.png" />
+        <img id="anger" src="assets/anger_symbol_3d.png" />
+      </div>
+      <div id="fast" class="clip" data-start="0" data-duration="19.2">⚡ em 2 segundos</div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const F = "=SOMA(B1:B5)";
+      const typing = { n: 0 }, money = { v: 0 };
+      const fmt = (v) => "R$ " + Math.round(v).toLocaleString("pt-BR");
+
+      gsap.set("#sheet", { opacity: 0, scale: 0.86, y: 30 });
+      gsap.set(".row", { opacity: 0, x: -24 });
+      gsap.set("#boss", { opacity: 0, x: 280, rotation: 12 });
+      gsap.set("#angry", { opacity: 0, scale: 0.6 });
+      gsap.set("#anger", { opacity: 0, scale: 0.3 });
+      gsap.set("#fast", { opacity: 0, y: 20 });
+
+      // 1. "você está no trabalho e precisa abrir a planilha" (2,6 s / 4,3 s)
+      tl.to("#sheet", { opacity: 1, scale: 1, y: 0, duration: 0.45, ease: "back.out(1.6)" }, 4.25);
+      tl.to(".row", { opacity: 1, x: 0, duration: 0.3, stagger: 0.12, ease: "power2.out" }, 4.55);
+
+      // 2. "Seu chefe tá reclamando, puto" (6,4 s / 7,9 s)
+      tl.to("#boss", { opacity: 1, x: 0, rotation: 0, duration: 0.45, ease: "back.out(1.4)" }, 6.4);
+      tl.to("#anger", { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(3)" }, 6.95);
+      tl.to("#anger", { scale: 1.15, duration: 0.25, repeat: 7, yoyo: true, ease: "sine.inOut" }, 7.25);
+      tl.to("#angry", { opacity: 1, scale: 1, duration: 0.25, ease: "back.out(2.5)" }, 7.9);
+      tl.to("#boss", { x: "+=10", duration: 0.05, repeat: 13, yoyo: true, ease: "none" }, 7.9);
+      tl.to("#sheet", { rotation: 1.2, duration: 0.07, repeat: 7, yoyo: true, ease: "none" }, 7.95);
+      tl.set("#sheet", { rotation: 0 }, 8.6);
+      tl.to("#boss", { opacity: 0, x: 280, duration: 0.4, ease: "power2.in" }, 11.6);
+
+      // 3. "você precisa somar todos esses valores de uma forma rápida" (14,4 s / 15,0 s / 16,5 s)
+      tl.to(typing, { n: F.length, duration: 0.6, ease: "none",
+        onUpdate: () => { document.getElementById("formula").textContent = F.slice(0, Math.round(typing.n)); } }, 14.3);
+      tl.to(".hl", { opacity: 1, duration: 0.15, stagger: 0.12 }, 14.95);
+      tl.to(money, { v: 42800, duration: 0.8, ease: "power2.out",
+        onUpdate: () => { document.getElementById("total").textContent = fmt(money.v); } }, 15.6);
+      tl.to(".hl", { opacity: 0, duration: 0.3 }, 16.6);
+      tl.to("#fast", { opacity: 1, y: 0, duration: 0.35, ease: "back.out(2)" }, 16.55);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

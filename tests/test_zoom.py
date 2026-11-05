@@ -7,6 +7,7 @@ import os, sys, unittest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
 from vtk import cuts
 from vtk.render import EYE_LINE, zoom_crop
+from test_cuts import invariantes
 
 CAM = [1231, 692, 1287, 461]  # camera_crop do presets/tiktok-vertical.json
 
@@ -42,11 +43,13 @@ class ZoomCrop(unittest.TestCase):
 class ZoomNoPlano(unittest.TestCase):
     def test_desligado_por_padrao(self):
         plan, _, _ = cuts.decide(WS, {}, total=10.0)
+        invariantes(self, plan)
         self.assertGreater(len(plan), 1)
         self.assertFalse(any("z" in c for c in plan))
 
     def test_com_zoom_alterna_nas_emendas_grandes(self):
         plan, removed, maybe = cuts.decide(WS, {}, total=10.0, zoom=1.1)
+        invariantes(self, plan)
         self.assertEqual([c.get("z", 1) for c in plan], [1, 1.1, 1])
         self.assertIn("Zoom na câmera", cuts.report(plan, removed, maybe, 10.0))
 
