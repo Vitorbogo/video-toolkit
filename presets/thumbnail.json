@@ -7,6 +7,28 @@
   },
   "rosto_no_video": { "_nota": "regiao do rosto no video final 9:16 (layout do preset tiktok-vertical)", "x": 0, "y": 125, "w": 1080, "h": 597 },
   "imagem": { "contraste": 1.07, "cor": 1.10, "brilho": 1.03 },
-  "vertical_9x16": { "w": 1080, "h": 1920, "_nota": "conteudo importante na faixa central (y 240-1680): a grade do perfil recorta as bordas" },
-  "youtube_16x9": { "w": 1280, "h": 720 }
+  "neutro": {
+    "_nota": "rosto.py: nota de cada quadro (0 = neutro). Peso maior = defeito pesa mais. fps = quadros analisados por segundo; distancia_s = intervalo minimo entre candidatos; margem_s = ignora o comeco e o fim",
+    "fps": 4, "largura": 540, "candidatos": 6, "distancia_s": 1.5, "margem_s": 0.5,
+    "pesos": { "olhos": 3.0, "boca": 4.0, "sorriso": 1.0, "testa": 0.5, "pose": 1.0, "nitidez": 1.0 }
+  },
+  "_nota_textos": "tam = tamanho da fonte; o thumb.py diminui (de 2 em 2 px, ate tam_min) ate a palavra mais longa caber na largura e o texto caber em linhas_max e no espaco livre. Nao cabendo nem assim: erro (encurtar o texto).",
+  "vertical_9x16": {
+    "w": 1080, "h": 1920,
+    "_nota": "conteudo importante na faixa central (seguro = y 240-1680): a grade do perfil recorta as bordas. O thumb.py confere que tudo fica dentro dela",
+    "seguro": [240, 1680], "margem_x": 90,
+    "kicker": { "y": 300, "tam": 38, "tam_min": 28, "linhas_max": 2, "entrelinha": 1.25 },
+    "barra": { "dy": 60, "w": 110, "h": 8 },
+    "titulo": { "y": 410, "tam": 112, "tam_min": 64, "linhas_max": 4, "entrelinha": 1.12 },
+    "rosto": { "margem_x": 60, "y_min": 940, "dy": 60, "raio": 36, "folga_rodape": 40 },
+    "rodape": { "y": 1590, "tam": 36, "tam_min": 28, "linhas_max": 2, "entrelinha": 1.3 }
+  },
+  "youtube_16x9": {
+    "w": 1280, "h": 720,
+    "_nota": "rosto num quadrado a direita (altura toda); textos na coluna da esquerda",
+    "seguro": [40, 690], "margem_x": 70, "margem_dir": 50,
+    "kicker": { "y": 90, "tam": 34, "tam_min": 24, "linhas_max": 2, "entrelinha": 1.25 },
+    "titulo": { "y": 150, "tam": 84, "tam_min": 48, "linhas_max": 4, "entrelinha": 1.1 },
+    "rodape": { "y": 630, "tam": 30, "tam_min": 22, "linhas_max": 2, "entrelinha": 1.3, "folga": 20 }
+  }
 }

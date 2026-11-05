@@ -1,6 +1,6 @@
 # Licenças de terceiros
 
-Este repositório inclui código de terceiros, todos sob licença MIT. O aviso de direitos autorais
+Este repositório inclui código de terceiros (licença MIT) e fontes (SIL OFL 1.1). O aviso de direitos autorais
 e o texto da licença original são mantidos junto de cada cópia.
 
 ## video-editing-skill — Frank Heijdenrijk
@@ -22,3 +22,11 @@ e o texto da licença original são mantidos junto de cada cópia.
 
 - Arquivos: `vendor/dev-video-editing/fonts/Poppins-*.ttf`
 - Licença: SIL Open Font License 1.1 (`vendor/dev-video-editing/fonts/OFL-Poppins.txt`)
+
+## Liberation Sans Bold — fonte da legenda
+
+- Arquivo: `assets/fonts/LiberationSans-Bold.ttf` (versão 2.1.5, release oficial de
+  https://github.com/liberationfonts/liberation-fonts)
+- Licença: SIL Open Font License 1.1 (`assets/fonts/licencas/LiberationSans-OFL.txt`). © 2012 Red Hat, Inc.;
+  Digitized data © 2010 Google Corporation
+- A licença fica numa subpasta porque o libass tenta abrir como fonte todo arquivo da pasta `fontsdir`.

@@ -6,10 +6,14 @@
       "titulo_max": 100,
       "titulo_visivel_feed": 50,
       "descricao_max": 5000,
+      "_nota_descricao_max": "Contado em caracteres. A API do YouTube pode contar 5000 BYTES (nao confirmado): com acento estoura antes; o publish.py avisa se os bytes UTF-8 passarem.",
       "descricao_visivel": 100,
+      "_nota_visivel": "descricao_visivel (e legenda_visivel no tiktok): caracteres antes do 'mais'; o publish.py mostra esse trecho no publicar.md.",
       "hashtags_max": 60,
       "hashtags_acima_do_titulo": 3,
+      "_nota_hashtags_acima_do_titulo": "Vale para video normal; em Shorts nao confirmado. So entra no texto do publicar.md.",
       "tags_total_max": 500,
+      "_nota_tags_total_max": "Soma das tags com as virgulas; tag com espaco ganha aspas (+2), como o Studio conta.",
       "short_duracao_max_s": 180
     },
     "tiktok": {

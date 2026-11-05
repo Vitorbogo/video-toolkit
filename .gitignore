@@ -1,17 +1,50 @@
-# mídia e modelos nunca entram no git
-*.mov
-*.mp4
-*.m4v
-*.mkv
-*.wav
-*.mp3
+# mídia e modelos nunca entram no git. [mM][oO][vV] pega .MOV também: no macOS (core.ignorecase) não faz
+# diferença, mas em outro sistema "GRAVACAO.MOV" escaparia de "*.mov"
+*.[mM][oO][vV]
+*.[mM][pP]4
+*.[mM]4[vV]
+*.[mM][kK][vV]
+*.[wW][eE][bB][mM]
+*.[mM][tT][sS]
+*.[wW][aA][vV]
+*.[mM][pP]3
+*.[mM]4[aA]
+*.[aA][aA][cC]
+*.[aA][iI][fF]
+*.[aA][iI][fF][fF]
 *.onnx
 *.tar.bz2
 models/
+
+# imagens (capas, quadros, folhas de candidatos) ficam fora; só as de presets/, assets/ e vendor/ entram
+*.[pP][nN][gG]
+*.[jJ][pP][gG]
+*.[jJ][pP][eE][gG]
+!/presets/**/*.[pP][nN][gG]
+!/presets/**/*.[jJ][pP][gG]
+!/presets/**/*.[jJ][pP][eE][gG]
+!/assets/**/*.[pP][nN][gG]
+!/assets/**/*.[jJ][pP][gG]
+!/assets/**/*.[jJ][pP][eE][gG]
+!/vendor/**/*.[pP][nN][gG]
+!/vendor/**/*.[jJ][pP][gG]
+!/vendor/**/*.[jJ][pP][eE][gG]
+
+# saídas intermediárias do fluxo, caso caiam fora de videos/<nome>/
 render*/
 work/
+edited/
+capas/
+lista.txt
+sil.txt
+segs.json
+transcript.json
+transcript.txt
+!/vendor/**/transcript.*
+*.bak
+
 .DS_Store
 __pycache__/
 
-# conteudo de cada video (transcricao, cortes, metadados) fica local: o repo e publico
+# conteúdo de cada vídeo (transcrição, cortes, metadados, capas, render) fica local: o repo é público
 videos/

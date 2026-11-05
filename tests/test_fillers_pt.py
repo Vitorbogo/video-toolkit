@@ -2,12 +2,13 @@
 
     python3 -m unittest discover tests
 """
-import importlib.util, json, os, unittest
+import json, os, sys, unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-mod = importlib.util.spec_from_file_location("edit_video", os.path.join(ROOT, "vendor/dev-video-editing/scripts/edit_video.py"))
-ev = importlib.util.module_from_spec(mod); mod.loader.exec_module(ev)
-PT = json.load(open(os.path.join(ROOT, "presets/fillers-pt.json"), encoding="utf-8"))
+sys.path.insert(0, os.path.join(ROOT, "src"))
+from vtk._vendor import ev
+with open(os.path.join(ROOT, "presets/fillers-pt.json"), encoding="utf-8") as f:
+    PT = json.load(f)
 
 
 def words(text, gap=0.1):

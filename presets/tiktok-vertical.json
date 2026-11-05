@@ -3,7 +3,8 @@
   "descricao": "Gravação de tela com janela da câmera à direita e slide à esquerda -> 9:16 com rosto em cima, slide no meio, legenda embaixo.",
   "canvas": { "w": 1080, "h": 1920, "fps": 30, "bg": "0x141B2D" },
   "source": {
-    "_nota": "crop = largura:altura:x:y na gravação original (2518x1726). MEDIR DE NOVO se as janelas mudarem de lugar.",
+    "_nota": "crop = largura:altura:x:y na gravação original; w/h = resolução dela (o render.py confere). MEDIR DE NOVO se as janelas mudarem de lugar.",
+    "w": 2518, "h": 1726,
     "camera_crop": [1231, 692, 1287, 461],
     "slide_crop": [1157, 1115, 0, 430]
   },
@@ -21,19 +22,19 @@
     "audio_fade_out_s": 0.03
   },
   "subtitles": {
-    "font": "Liberation Sans", "fontsdir": "/usr/share/fonts/truetype/liberation2",
+    "font": "Liberation Sans", "fontsdir": "assets/fonts",
     "size": 60, "bold": true, "outline": 5, "margin_v": 140,
     "max_chars_per_line": 30, "max_chars_per_event": 60,
     "primary": "&H00FFFFFF", "outline_color": "&H00281B14"
   },
   "audio": {
-    "_nota": "medido no 1o video: voz ~-24 dB, fundo ~-61 dB, 37 dB de folga. Reducao de ruido DESLIGADA: com o microfone do Vitor o afftdn deixava a voz robotica (2o video). Compressor 2:1 e pre_limiter 1.0 sao os do ajuste que ele usou nesse video. So ligar o denoise se aparecer ruido de fundo, comparando antes/depois.",
+    "_nota": "medido no 1o video: voz ~-24 dB, fundo ~-61 dB, 37 dB de folga. Reducao de ruido DESLIGADA: com o microfone do Vitor o afftdn deixava a voz robotica (2o video). Compressor 2:1 do ajuste que ele usou nesse video. So ligar o denoise se aparecer ruido de fundo, comparando antes/depois. pre_limiter 'auto': o postaudio calcula o limite que deixa o loudnorm linear (o 1.0 antigo nao fazia nada e o loudnorm caia no modo dinamico). tp_margin_db: folga de pico para o AAC; o limitador final fica em TP - tp_margin_db e o resultado e medido.",
     "highpass_hz": 80,
     "denoise": { "enabled": false, "nr_db": 0, "noise_floor_db": -60 },
     "compressor": { "threshold_linear": 0.06, "ratio": 2, "attack_ms": 20, "release_ms": 250, "makeup": 1 },
-    "pre_limiter": 1.0,
+    "pre_limiter": "auto",
     "loudnorm": { "I": -14, "TP": -1.5, "LRA": 11 },
-    "limiter": 0.84,
+    "tp_margin_db": 1.0,
     "bitrate": "160k"
   },
   "camera_filter": {
