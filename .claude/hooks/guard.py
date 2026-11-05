@@ -23,6 +23,8 @@ M_GIT = "Midia e modelos nunca entram no git (o repo e publico)."
 M_MOV = "Nao apague nem descarte gravacao original (.mov). So depois do video publicado, e a pedido do Vitor."
 M_UP = "Nao envie audio/video (nem videos/) para fora do computador sem o Vitor pedir."
 M_API = "Transcricao e edicao sao locais e gratis neste projeto. Nada de API paga sem o Vitor pedir."
+M_HF = ("HyperFrames: so o render local e gratis (init, lint, snapshot, render, docs, preview). Login, creditos, nuvem e "
+        "templates/skills Pro da HeyGen sao pagos ou mandam coisas para fora: so com o Vitor pedindo.")
 
 REGRAS = [
     (GIT_ADD + S + r"\s(?:(?-i:-[a-zA-Z]*f[a-zA-Z]*)|--force)" + FIM, "git add --force passa por cima do .gitignore. " + M_GIT),
@@ -38,6 +40,10 @@ REGRAS = [
     (CMD + r"(?:rclone|gsutil|gcloud\s+storage|aws\s+s3(?:api)?|s3cmd|azcopy|b2)\s" + S + CARGA, M_UP),
     (CMD + r"gh\s+(?:release\s+(?:upload|create)|gist\s+create)\s" + S + CARGA, M_UP),
     ("|".join(re.escape(h) for h in HOSTS), M_API),
+    # HyperFrames: so o render local e gratis; estes comandos usam conta, creditos ou nuvem da HeyGen
+    (CMD + r"hyperframes(?:@\S+)?\s+(?:auth|login|billing|cloud|lambda|cloudrun|publish|templates|reverse|catch-up)\b", M_HF),
+    (CMD + r"hyperframes(?:@\S+)?\s+(?:transcribe|tts|remove-background)\s" + S + r"--engine[=\s]+[\"']?heygen\b", M_HF),
+    (CMD + r"hyperframes(?:@\S+)?\s+skills\s+update\s+(?:reverse-any-video|style-sampling)\b", M_HF),
 ]
 
 # rodar um script (nao ler): inicio do comando, com prefixos comuns, opcionalmente via python

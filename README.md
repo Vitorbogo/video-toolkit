@@ -14,7 +14,7 @@ Tudo roda local, só com ffmpeg e Python. Receita e decisões estão no vault do
 | `assets/fonts/` | Poppins (legenda e capas, SIL OFL 1.1, `OFL-Poppins.txt`). |
 | `sfx/` | Efeitos sonoros curtos (whoosh, pops, clique), **gerados** por `src/vtk/sfx.py gerar`. Únicos `.wav` no git. |
 | `tests/` | Testes (`python3 -m unittest discover tests`; os que precisam de ffmpeg ou do modelo são pulados sem eles). |
-| `.claude/` | `skills/editar-video` (roteiro do agente: gravação → `publicar.md`, com os pontos de revisão), `skills/publicar-video` (como escrever os metadados), `skills/efeitos-sonoros` (onde pôr cada efeito), `skills/ilustracoes` (animações no lugar do slide, com HyperFrames) e `hooks/guard.py` (bloqueia mídia no git, apagar/mover `.mov`, enviar mídia para fora, API paga, `transcribe.py` da skill sem `--engine local`, `upload_parts.py`). |
+| `.claude/` | `skills/editar-video` (roteiro do agente: gravação → `publicar.md`, com os pontos de revisão), `skills/publicar-video` (como escrever os metadados), `skills/efeitos-sonoros` (onde pôr cada efeito), `skills/ilustracoes` (animações no lugar do slide, com HyperFrames) e `hooks/guard.py` (bloqueia mídia no git, apagar/mover `.mov`, enviar mídia para fora, API paga, comandos pagos ou de nuvem do HyperFrames, `transcribe.py` da skill sem `--engine local`, `upload_parts.py`). |
 | `videos/<nome>/` | **Tudo de cada vídeo**: transcrição, `edit.json`, `plan.json`, `preset.json`, clipes (`render/`), vídeo final, capas (`capas/`), `meta.json`, `publicar.md`. **Fora do git** (o repo é público e o conteúdo não pode vazar antes de o vídeo sair). |
 
 Requisitos: `ffmpeg` (com `ffprobe`), Python 3 com `Pillow`, `numpy`, `sherpa-onnx` e `mediapipe` (só para o `rosto.py`).

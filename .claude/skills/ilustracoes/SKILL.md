@@ -18,9 +18,14 @@ põe no lugar do slide recortado. Ela segue a fala: cada coisa aparece na palavr
 
 HyperFrames (Apache 2.0, da HeyGen), via `npx hyperframes@0.9.16`, fixado nessa versão. Ele roda local (Node 22+,
 ffmpeg, um Chrome headless que ele mesmo baixa) e não envia o vídeo para fora. Na primeira vez numa máquina, rode
-`npx hyperframes@0.9.16 telemetry disable`. Não use `cloud`, `publish`, `lambda`, `cloudrun` nem `auth`: mandam
-coisas para fora. Docs offline: `npx hyperframes@0.9.16 docs <tópico>` (data-attributes, gsap, compositions,
-rendering).
+`npx hyperframes@0.9.16 telemetry disable`. Docs offline: `npx hyperframes@0.9.16 docs <tópico>`
+(data-attributes, gsap, compositions, rendering).
+
+**Grátis e sem limite é só o local:** `init`, `lint`, `snapshot`, `render`, `preview`, `docs`. Conta, créditos e nuvem
+da HeyGen são pagos ou mandam coisas para fora, e o `guard.py` bloqueia: `auth`, `billing`, `cloud`, `lambda`,
+`cloudrun`, `publish`, `templates`, `reverse`, `--engine heygen`, e as skills Pro `reverse-any-video` e
+`style-sampling`. O app HyperFrames Studio (plano Free com 5 exportações na nuvem por mês, Pro pago) também não faz
+parte do fluxo. Mantenha a versão fixada: a Apache 2.0 da 0.9.16 não pode ser retirada.
 
 ## Passos
 
