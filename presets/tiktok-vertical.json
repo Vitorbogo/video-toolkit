@@ -1,6 +1,6 @@
 {
   "name": "tiktok-vertical",
-  "descricao": "Gravação de tela com janela da câmera à direita e slide à esquerda -> 9:16 com rosto em cima, slide no meio, legenda embaixo.",
+  "description": "Screen recording with the camera window on the right and the slide on the left -> 9:16 with the face on top, slide in the middle, captions at the bottom.",
   "canvas": {
     "w": 1080,
     "h": 1920,
@@ -8,7 +8,7 @@
     "bg": "0x141B2D"
   },
   "source": {
-    "_nota": "crop = largura:altura:x:y na gravação original; w/h = resolução dela (o render.py confere). MEDIR DE NOVO se as janelas mudarem de lugar.",
+    "_note": "crop = width:height:x:y in the original recording; w/h = its resolution (render.py checks it). MEASURE AGAIN if the windows move.",
     "w": 2518,
     "h": 1726,
     "camera_crop": [
@@ -46,7 +46,7 @@
     "audio_fade_out_s": 0.03
   },
   "subtitles": {
-    "_nota": "desenhada com Pillow (src/vtk/captions.py): frase inteira, palavra falada em 'highlight' (laranja do selo dos slides). Estilo A, escolhido em 05/11/2026. font_file relativo à raiz.",
+    "_note": "drawn with Pillow (src/vtk/captions.py): whole sentence, spoken word in 'highlight' (the orange of the slides' badge). Style A, chosen on 2026-11-05. font_file relative to the root.",
     "font_file": "assets/fonts/Poppins-ExtraBold.ttf",
     "size": 62,
     "outline": 5,
@@ -58,7 +58,7 @@
     "outline_color": "#141B28"
   },
   "audio": {
-    "_nota": "medido no 1o video: voz ~-24 dB, fundo ~-61 dB, 37 dB de folga. Reducao de ruido DESLIGADA: com o microfone usado o afftdn deixava a voz robotica (2o video). Compressor 2:1 do ajuste que ele usou nesse video. So ligar o denoise se aparecer ruido de fundo, comparando antes/depois. pre_limiter 'auto': o postaudio calcula o limite que deixa o loudnorm linear (o 1.0 antigo nao fazia nada e o loudnorm caia no modo dinamico). tp_margin_db: folga de pico para o AAC; o limitador final fica em TP - tp_margin_db e o resultado e medido.",
+    "_note": "measured on the 1st video: voice ~-24 dB, background ~-61 dB, 37 dB of headroom. Noise reduction OFF: with the microphone used, afftdn made the voice robotic (2nd video). 2:1 compressor from the setting used in that video. Only turn denoise on if background noise shows up, comparing before/after. pre_limiter 'auto': postaudio computes the limit that keeps loudnorm linear (the old 1.0 did nothing and loudnorm fell back to dynamic mode). tp_margin_db: peak headroom for AAC; the final limiter sits at TP - tp_margin_db and the result is measured.",
     "highpass_hz": 80,
     "denoise": {
       "enabled": false,
@@ -82,7 +82,7 @@
     "bitrate": "160k"
   },
   "camera_filter": {
-    "_nota": "tratamento de imagem so da camera. 'off' = nenhum. Escolher olhando antes/depois.",
+    "_note": "image treatment for the camera only. 'off' = none. Choose by looking at before/after.",
     "mode": "natural",
     "off": "",
     "natural": "hqdn3d=1.5:1.5:3:3,eq=contrast=1.07:brightness=0.02:saturation=1.10:gamma=0.98,unsharp=5:5:0.35:5:5:0.0"

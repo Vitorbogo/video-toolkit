@@ -1,12 +1,12 @@
-"""Carrega um preset JSON, com herança opcional.
+"""Loads a JSON preset, with optional inheritance.
 
-Um preset de vídeo (videos/<nome>/preset.json) guarda só o que muda, por exemplo os recortes daquela gravação:
+A per-video preset (videos/<name>/preset.json) keeps only what changes, for example the crops of that recording:
 
     {"base": "presets/tiktok-vertical.json",
      "source": {"w": 2940, "h": 1612, "camera_crop": [1440, 810, 15, 290], "slide_crop": [1466, 1612, 1474, 0]}}
 
-O resto vem do preset base. Dicionários são mesclados chave a chave; listas e valores simples são trocados inteiros.
-"base" é relativo à raiz do repositório (ou absoluto). Presets antigos, com tudo copiado, continuam valendo.
+The rest comes from the base preset. Dicts are merged key by key; lists and plain values are replaced whole.
+"base" is relative to the repository root (or absolute). Old presets, with everything copied, still work.
 """
 import json, os
 
@@ -21,7 +21,7 @@ def merge(base, over):
 
 
 def resolve(path):
-    """Caminho absoluto: como dado, se existir a partir da pasta atual; senão, relativo à raiz do repositório."""
+    """Absolute path: as given, if it exists from the current folder; otherwise, relative to the repository root."""
     if os.path.isabs(path) or os.path.exists(path):
         return os.path.abspath(path)
     return os.path.join(ROOT, path)
@@ -31,7 +31,7 @@ def load(path, _seen=None):
     path = resolve(path)
     seen = _seen or set()
     if path in seen:
-        raise SystemExit("preset: herança circular em %s" % path)
+        raise SystemExit("preset: circular inheritance in %s" % path)
     seen.add(path)
     with open(path, encoding="utf-8") as f:
         P = json.load(f)

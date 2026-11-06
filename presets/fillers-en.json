@@ -1,0 +1,16 @@
+{
+  "name": "fillers-en",
+  "_note": "English preset for src/vtk/cuts.py (language 'en', see src/vtk/lang.py). Conservative like fillers-pt.json: a filler left in costs a 'cut' in edit.json during review; real content cut by mistake is easy to miss. 'fillers' = pure hesitation, always cut. Left out on purpose: 'ah'/'oh' (real interjections: 'Ah, I see'), 'er'/'err' ('ER' the emergency room, 'to err'), 'mm' ('5 mm'), and agreement sounds ('mm-hmm', 'uh-huh'; the engine also keeps 'mm hmm'). Add any of them to 'fillers' in edit.json for a speaker who uses them. 'extra_fillers' = crutch words, cut only next to a comma (before OR after); the engine cuts multi-word phrases ANYWHERE, so 'you know', 'I mean', 'kind of', 'sort of' can't go here ('do you know', 'what I mean is'). Only 'basically' is in: removing it never breaks the sentence. Left out: 'like' (', like emails' = such as), 'so' ('I think so, but'), 'actually' (a correction: 'No, actually, it's free'), 'right' ('Turn right,'; 'free, right?'), 'well' ('it works well, and'), 'okay', 'anyway', 'yeah', 'honestly', 'literally' (meaning or grammar depends on them). Cut them by hand in 'cut' when they are filler. 'short_words' = a caption line should not end on them; 'break_before' = breaking a caption line before them reads naturally; 'function_words' = language detection. Test: tests/test_fillers.py.",
+  "fillers": ["um", "umm", "ummm", "uh", "uhh", "uhm", "erm", "hmm", "hmmm", "hm", "mmm"],
+  "extra_fillers": ["basically"],
+  "short_words": ["a", "an", "the", "of", "to", "in", "on", "at", "for", "with", "from", "by", "into", "and", "or", "as",
+                  "i", "my", "your", "his", "her", "its", "our", "their"],
+  "break_before": ["and", "but", "or", "because", "so", "when", "where", "while", "which"],
+  "function_words": ["the", "and", "of", "to", "a", "in", "is", "it", "that", "you", "i", "for", "on", "with", "this",
+                     "was", "are", "be", "have", "has", "had", "not", "but", "what", "can", "we", "they", "my", "your",
+                     "if", "just", "so", "there", "do", "it's", "i'm", "don't", "that's", "you're", "we're", "can't",
+                     "from", "at", "by", "an", "or", "will", "would", "about", "how", "when", "all", "get", "like",
+                     "because", "then", "here", "now", "really", "very", "which", "who", "he", "she", "his", "her",
+                     "our", "been", "were", "them", "these", "those", "also", "more", "some", "out", "up", "as", "no",
+                     "me", "going", "want", "know", "think"]
+}

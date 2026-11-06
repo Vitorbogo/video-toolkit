@@ -1,4 +1,4 @@
-"""publish.py: valida meta.json (tipos, limites, hashtags, capa, duracao) e gera publicar.md deterministico.
+"""publish.py: validates meta.json (types, limits, hashtags, cover, duration) and generates a deterministic publish.md.
 
     python3 -m unittest discover tests
 """
@@ -11,19 +11,19 @@ from vtk import publish
 
 with open(os.path.join(ROOT, "presets", "publish.json"), encoding="utf-8") as f:
     P = json.load(f)
-YT, TT = P["limites"]["youtube"], P["limites"]["tiktok"]
+YT, TT = P["limits"]["youtube"], P["limits"]["tiktok"]
 
 META = {
-    "titulos": ["Os 4 elementos de um bom prompt", "Alternativa curta"],
-    "descricao": "Gancho curto.\n\nO que voce leva do video.",
-    "legenda_tiktok": "Gancho curto da legenda.",
+    "titles": ["Os 4 elementos de um bom prompt", "Alternativa curta"],
+    "description": "Gancho curto.\n\nO que voce leva do video.",
+    "tiktok_caption": "Gancho curto da legenda.",
     "hashtags": {"tiktok": ["#InteligenciaArtificial", "#Prompt", "#Produtividade"],
                  "youtube": ["#InteligenciaArtificial", "#Prompt", "#Produtividade"]},
-    "hashtags_motivo": "PROPOSTA: publico geral.",
-    "capa": {"variante": "A", "motivo": "Rosto aberto e texto legivel."},
+    "hashtags_reason": "PROPOSTA: publico geral.",
+    "cover": {"variant": "A", "reason": "Rosto aberto e texto legivel."},
 }
-THUMB = {"variantes": [{"nome": "A", "vertical": {"tempo_s": 14}}, {"nome": "B"}]}
-CAPAS = {f for v in "AB" for f in publish.arquivos_capa(v).values()}
+THUMB = {"variants": [{"name": "A", "vertical": {"time_s": 14}}, {"name": "B"}]}
+COVERS = {f for v in "AB" for f in publish.cover_files(v).values()}
 
 
 def meta(**over):
@@ -32,238 +32,248 @@ def meta(**over):
     return M
 
 
-def check(M, dur=45.0, thumb=THUMB, capas=CAPAS):
-    return publish.validate(publish.nfc(M), P, dur, thumb, capas)
+def check(M, dur=45.0, thumb=THUMB, covers=COVERS):
+    return publish.validate(publish.nfc(M), P, dur, thumb, covers)
 
 
-class Campos(unittest.TestCase):
-    def assertErro(self, M, trecho, **kw):
-        erros, _ = check(M, **kw)
-        self.assertTrue(any(trecho in e for e in erros), f"esperava '{trecho}' em {erros}")
 
-    def test_meta_valido(self):
+class Fields(unittest.TestCase):
+    def assertError(self, M, snippet, **kw):
+        errors, _ = check(M, **kw)
+        self.assertTrue(any(snippet in e for e in errors), f"expected '{snippet}' in {errors}")
+
+    def test_valid_meta(self):
         self.assertEqual(check(META), ([], []))
 
-    def test_cada_obrigatorio_ausente_ou_vazio(self):
-        for k in publish.CAMPOS:
-            for vazio in (None, "", [], {}):
-                M = meta(); M[k] = vazio
-                with self.subTest(k=k, v=vazio): self.assertErro(M, f"ausente ou vazio: {k}")
+    def test_each_required_missing_or_empty(self):
+        for k in publish.FIELDS:
+            for empty in (None, "", [], {}):
+                M = meta(); M[k] = empty
+                with self.subTest(k=k, v=empty): self.assertError(M, f"missing or empty: {k}")
             M = meta(); del M[k]
-            with self.subTest(k=k, v="del"): self.assertErro(M, f"ausente ou vazio: {k}")
+            with self.subTest(k=k, v="del"): self.assertError(M, f"missing or empty: {k}")
 
-    def test_tipos_errados(self):
-        casos = [
-            (dict(titulos="um titulo so"), "titulos precisa"),
-            (dict(titulos=["a", "b", "c", "d"]), "titulos precisa"),
-            (dict(titulos=["a", ""]), "titulos precisa"),
-            (dict(titulos=["a", 3]), "titulos precisa"),
-            (dict(descricao=5), "descricao precisa ser texto"),
-            (dict(descricao=0), "descricao precisa ser texto"),
-            (dict(legenda_tiktok=["x"]), "legenda_tiktok precisa ser texto"),
-            (dict(hashtags_motivo={"a": 1}), "hashtags_motivo precisa ser texto"),
-            (dict(hashtags=["#a"]), "hashtags precisa ser"),
-            (dict(hashtags={"tiktok": ["#a", "#b", "#c"]}), "hashtags.youtube ausente"),
-            (dict(hashtags={"tiktok": [], "youtube": [], "instagram": []}), "plataforma desconhecida 'instagram'"),
-            (dict(hashtags={"tiktok": "#a #b", "youtube": []}), "hashtags.tiktok precisa ser lista"),
-            (dict(hashtags={"tiktok": [], "youtube": [1]}), "hashtags.youtube precisa ser lista"),
-            (dict(capa="A"), "capa precisa ser"),
-            (dict(capa={"variante": "A"}), "capa.motivo"),
-            (dict(capa={"motivo": "x", "variante": 1}), "capa.variante"),
-            (dict(tags_youtube="ia, prompt"), "tags_youtube precisa"),
-            (dict(comentario_fixado=3), "comentario_fixado precisa ser texto"),
-            (dict(notas=["x"]), "notas precisa ser texto"),
+    def test_wrong_types(self):
+        cases = [
+            (dict(titles="a single title"), "titles must"),
+            (dict(titles=["a", "b", "c", "d"]), "titles must"),
+            (dict(titles=["a", ""]), "titles must"),
+            (dict(titles=["a", 3]), "titles must"),
+            (dict(description=5), "description must be text"),
+            (dict(description=0), "description must be text"),
+            (dict(tiktok_caption=["x"]), "tiktok_caption must be text"),
+            (dict(hashtags_reason={"a": 1}), "hashtags_reason must be text"),
+            (dict(hashtags=["#a"]), "hashtags must be"),
+            (dict(hashtags={"tiktok": ["#a", "#b", "#c"]}), "hashtags.youtube missing"),
+            (dict(hashtags={"tiktok": [], "youtube": [], "instagram": []}), "unknown platform 'instagram'"),
+            (dict(hashtags={"tiktok": "#a #b", "youtube": []}), "hashtags.tiktok must be a list"),
+            (dict(hashtags={"tiktok": [], "youtube": [1]}), "hashtags.youtube must be a list"),
+            (dict(cover="A"), "cover must be"),
+            (dict(cover={"variant": "A"}), "cover.reason"),
+            (dict(cover={"reason": "x", "variant": 1}), "cover.variant"),
+            (dict(youtube_tags="ia, prompt"), "youtube_tags must"),
+            (dict(pinned_comment=3), "pinned_comment must be text"),
+            (dict(notes=["x"]), "notes must be text"),
+            (dict(lang="pt-BR"), "lang must be"),
+            (dict(lang="PT"), "lang must be"),
+            (dict(lang=1), "lang must be"),
         ]
-        for over, trecho in casos:
-            with self.subTest(over=over): self.assertErro(meta(**over), trecho)
+        for over, snippet in cases:
+            with self.subTest(over=over): self.assertError(meta(**over), snippet)
 
-    def test_meta_nao_objeto(self):
-        self.assertErro(["x"], "objeto JSON")
+    def test_meta_not_object(self):
+        self.assertError(["x"], "JSON object")
 
-    def test_hashtags_vazias_sao_validas(self):
-        erros, _ = check(meta(hashtags={"tiktok": [], "youtube": []}))
-        self.assertEqual(erros, [])
+    def test_empty_hashtags_are_valid(self):
+        errors, _ = check(meta(hashtags={"tiktok": [], "youtube": []}))
+        self.assertEqual(errors, [])
 
-    def test_campo_desconhecido_avisa(self):
-        erros, avisos = check(meta(comentario_fixo="x"))
-        self.assertEqual(erros, [])
-        self.assertTrue(any("comentario_fixo" in a for a in avisos))
+    def test_unknown_field_warns(self):
+        errors, warnings = check(meta(pinned_coment="x"))
+        self.assertEqual(errors, [])
+        self.assertTrue(any("pinned_coment" in a for a in warnings))
+
+    def test_lang_is_optional_and_accepted(self):
+        for lang in ("pt", "en"):
+            with self.subTest(lang=lang): self.assertEqual(check(meta(lang=lang)), ([], []))
 
 
-class Textos(unittest.TestCase):
-    def test_titulo_acima_do_max_e_erro(self):
-        erros, _ = check(meta(titulos=["x" * (YT["titulo_max"] + 1)]))
-        self.assertTrue(any("titulo 1" in e for e in erros))
+class Texts(unittest.TestCase):
+    def test_title_over_max_is_error(self):
+        errors, _ = check(meta(titles=["x" * (YT["title_max"] + 1)]))
+        self.assertTrue(any("title 1" in e for e in errors))
 
-    def test_titulo_so_acima_do_visivel_e_aviso(self):
-        erros, avisos = check(meta(titulos=["x" * YT["titulo_max"]]))
-        self.assertEqual(erros, [])
-        self.assertTrue(any("titulo 1" in a and "feed" in a for a in avisos))
-        erros, avisos = check(meta(titulos=["x" * YT["titulo_visivel_feed"]]))
-        self.assertEqual((erros, avisos), ([], []))
+    def test_title_only_over_visible_is_warning(self):
+        errors, warnings = check(meta(titles=["x" * YT["title_max"]]))
+        self.assertEqual(errors, [])
+        self.assertTrue(any("title 1" in a and "feed" in a for a in warnings))
+        errors, warnings = check(meta(titles=["x" * YT["title_visible_feed"]]))
+        self.assertEqual((errors, warnings), ([], []))
 
-    def test_nfc_antes_de_contar(self):
-        nfd = unicodedata.normalize("NFD", "é" * YT["titulo_max"])
-        self.assertGreater(len(nfd), YT["titulo_max"])
-        erros, _ = check(meta(titulos=[nfd]))
-        self.assertEqual(erros, [])
+    def test_nfc_before_counting(self):
+        nfd = unicodedata.normalize("NFD", "é" * YT["title_max"])
+        self.assertGreater(len(nfd), YT["title_max"])
+        errors, _ = check(meta(titles=[nfd]))
+        self.assertEqual(errors, [])
 
-    def test_emoji_avisa(self):
-        erros, avisos = check(meta(legenda_tiktok="Olha isso 🔥"))
-        self.assertEqual(erros, [])
-        self.assertTrue(any("emoji" in a and "legenda_tiktok" in a for a in avisos))
+    def test_emoji_warns(self):
+        errors, warnings = check(meta(tiktok_caption="Olha isso 🔥"))
+        self.assertEqual(errors, [])
+        self.assertTrue(any("emoji" in a and "tiktok_caption" in a for a in warnings))
 
-    def test_hashtag_dentro_do_texto(self):
-        for k, v in (("descricao", "Veja #IA aqui"), ("legenda_tiktok", "#Prompt no comeco"), ("titulos", ["Prompt #1 do ano"])):
+    def test_hashtag_inside_text(self):
+        for k, v in (("description", "Veja #IA aqui"), ("tiktok_caption", "#Prompt no comeco"), ("titles", ["Prompt #1 do ano"])):
             with self.subTest(k=k):
-                erros, _ = check(meta(**{k: v}))
-                self.assertTrue(any("hashtag no texto" in e for e in erros), erros)
+                errors, _ = check(meta(**{k: v}))
+                self.assertTrue(any("hashtag in the text" in e for e in errors), errors)
 
-    def test_cerquilha_que_nao_e_hashtag(self):
-        erros, _ = check(meta(descricao="Exemplo em C# e no site x.com/#secao; aspas &#39; ok"))
-        self.assertEqual(erros, [])
+    def test_hash_sign_that_is_not_a_hashtag(self):
+        errors, _ = check(meta(description="Exemplo em C# e no site x.com/#secao; aspas &#39; ok"))
+        self.assertEqual(errors, [])
 
-    def test_menor_maior_no_youtube(self):
-        for k, v in (("titulos", ["Prompt <bom>"]), ("descricao", "a > b")):
+    def test_less_greater_on_youtube(self):
+        for k, v in (("titles", ["Prompt <bom>"]), ("description", "a > b")):
             with self.subTest(k=k):
-                erros, _ = check(meta(**{k: v}))
-                self.assertTrue(any("'<' ou '>'" in e for e in erros), erros)
-        erros, _ = check(meta(legenda_tiktok="a > b"))
-        self.assertEqual(erros, [])
+                errors, _ = check(meta(**{k: v}))
+                self.assertTrue(any("'<' or '>'" in e for e in errors), errors)
+        errors, _ = check(meta(tiktok_caption="a > b"))
+        self.assertEqual(errors, [])
 
 
 class Hashtags(unittest.TestCase):
-    def test_invalidas(self):
+    def test_invalid(self):
         for h in ("IA", "#com espaco", "#a-b", "#", "#ponto."):
             with self.subTest(h=h):
-                erros, _ = check(meta(hashtags={"tiktok": ["#Ok", h, "#Mais"], "youtube": []}))
-                self.assertTrue(any("invalidas em tiktok" in e for e in erros), erros)
+                errors, _ = check(meta(hashtags={"tiktok": ["#Ok", h, "#Mais"], "youtube": []}))
+                self.assertTrue(any("invalid hashtags in tiktok" in e for e in errors), errors)
 
-    def test_acento_e_valido(self):
-        erros, _ = check(meta(hashtags={"tiktok": ["#Inteligência", "#Prompt", "#Ação"], "youtube": []}))
-        self.assertEqual(erros, [])
+    def test_accent_is_valid(self):
+        errors, _ = check(meta(hashtags={"tiktok": ["#Inteligência", "#Prompt", "#Ação"], "youtube": []}))
+        self.assertEqual(errors, [])
 
-    def test_repetidas_sem_diferenciar_caixa(self):
-        erros, _ = check(meta(hashtags={"tiktok": [], "youtube": ["#IA", "#Prompt", "#ia"]}))
-        self.assertTrue(any("repetidas em youtube" in e and "#ia" in e for e in erros), erros)
+    def test_repeated_case_insensitive(self):
+        errors, _ = check(meta(hashtags={"tiktok": [], "youtube": ["#IA", "#Prompt", "#ia"]}))
+        self.assertTrue(any("repeated hashtags in youtube" in e and "#ia" in e for e in errors), errors)
 
-    def test_fora_da_faixa_recomendada_avisa(self):
-        erros, avisos = check(meta(hashtags={"tiktok": ["#A1"], "youtube": []}))
-        self.assertEqual(erros, [])
-        self.assertTrue(any(a.startswith("tiktok: 1 hashtags") for a in avisos))
+    def test_outside_recommended_range_warns(self):
+        errors, warnings = check(meta(hashtags={"tiktok": ["#A1"], "youtube": []}))
+        self.assertEqual(errors, [])
+        self.assertTrue(any(a.startswith("tiktok: 1 hashtags") for a in warnings))
 
-    def test_youtube_60_ok_61_erro(self):
+    def test_youtube_60_ok_61_error(self):
         n = YT["hashtags_max"]
-        erros, _ = check(meta(descricao="d", hashtags={"tiktok": [], "youtube": [f"#T{i}" for i in range(n)]}))
-        self.assertEqual(erros, [])
-        erros, _ = check(meta(descricao="d", hashtags={"tiktok": [], "youtube": [f"#T{i}" for i in range(n + 1)]}))
-        self.assertTrue(any("hashtags no YouTube" in e for e in erros), erros)
+        errors, _ = check(meta(description="d", hashtags={"tiktok": [], "youtube": [f"#T{i}" for i in range(n)]}))
+        self.assertEqual(errors, [])
+        errors, _ = check(meta(description="d", hashtags={"tiktok": [], "youtube": [f"#T{i}" for i in range(n + 1)]}))
+        self.assertTrue(any("hashtags on YouTube" in e for e in errors), errors)
 
-    def test_legenda_mais_hashtags_no_limite(self):
+    def test_caption_plus_hashtags_at_limit(self):
         hs = ["#Aa", "#Bb", "#Cc"]
-        resto = TT["legenda_max"] - len("\n\n" + " ".join(hs))
-        erros, _ = check(meta(legenda_tiktok="x" * resto, hashtags={"tiktok": hs, "youtube": []}))
-        self.assertEqual(erros, [])
-        erros, _ = check(meta(legenda_tiktok="x" * (resto + 1), hashtags={"tiktok": hs, "youtube": []}))
-        self.assertTrue(any("legenda do TikTok + hashtags" in e for e in erros), erros)
+        rest = TT["caption_max"] - len("\n\n" + " ".join(hs))
+        errors, _ = check(meta(tiktok_caption="x" * rest, hashtags={"tiktok": hs, "youtube": []}))
+        self.assertEqual(errors, [])
+        errors, _ = check(meta(tiktok_caption="x" * (rest + 1), hashtags={"tiktok": hs, "youtube": []}))
+        self.assertTrue(any("TikTok caption + hashtags" in e for e in errors), errors)
 
-    def test_descricao_mais_hashtags_no_limite(self):
+    def test_description_plus_hashtags_at_limit(self):
         hs = ["#Aa", "#Bb", "#Cc"]
-        resto = YT["descricao_max"] - len("\n\n" + " ".join(hs))
-        erros, _ = check(meta(descricao="x" * resto, hashtags={"tiktok": [], "youtube": hs}))
-        self.assertEqual(erros, [])
-        erros, _ = check(meta(descricao="x" * (resto + 1), hashtags={"tiktok": [], "youtube": hs}))
-        self.assertTrue(any("descricao + hashtags" in e for e in erros), erros)
+        rest = YT["description_max"] - len("\n\n" + " ".join(hs))
+        errors, _ = check(meta(description="x" * rest, hashtags={"tiktok": [], "youtube": hs}))
+        self.assertEqual(errors, [])
+        errors, _ = check(meta(description="x" * (rest + 1), hashtags={"tiktok": [], "youtube": hs}))
+        self.assertTrue(any("description + hashtags" in e for e in errors), errors)
 
-    def test_descricao_em_bytes_avisa(self):
-        erros, avisos = check(meta(descricao="ç" * 3000, hashtags={"tiktok": [], "youtube": []}))
-        self.assertEqual(erros, [])
-        self.assertTrue(any("bytes" in a for a in avisos))
+    def test_description_in_bytes_warns(self):
+        errors, warnings = check(meta(description="ç" * 3000, hashtags={"tiktok": [], "youtube": []}))
+        self.assertEqual(errors, [])
+        self.assertTrue(any("bytes" in a for a in warnings))
 
-    def test_tags_youtube_aspas_em_tag_com_espaco(self):
+    def test_youtube_tags_quotes_on_tag_with_space(self):
         self.assertEqual(publish.tags_total(["ia", "bom prompt"]), len("ia,bom prompt") + 2)
-        cheio = ["x" * 99] * 5  # 5*99 + 4 virgulas = 499
-        self.assertEqual(check(meta(tags_youtube=cheio))[0], [])
-        com_espaco = cheio[:-1] + ["x" * 49 + " " + "x" * 49]  # 499 + 2 aspas = 501
-        erros, _ = check(meta(tags_youtube=com_espaco))
-        self.assertTrue(any("tags do YouTube somam 501" in e for e in erros), erros)
+        full = ["x" * 99] * 5  # 5*99 + 4 commas = 499
+        self.assertEqual(check(meta(youtube_tags=full))[0], [])
+        with_space = full[:-1] + ["x" * 49 + " " + "x" * 49]  # 499 + 2 quotes = 501
+        errors, _ = check(meta(youtube_tags=with_space))
+        self.assertTrue(any("YouTube tags add up to 501" in e for e in errors), errors)
 
 
-class CapaEDuracao(unittest.TestCase):
-    def test_variante_inexistente(self):
-        erros, _ = check(meta(capa={"variante": "Z", "motivo": "x"}))
-        self.assertTrue(any("variante de capa 'Z'" in e for e in erros), erros)
+class CoverAndDuration(unittest.TestCase):
+    def test_missing_variant(self):
+        errors, _ = check(meta(cover={"variant": "Z", "reason": "x"}))
+        self.assertTrue(any("cover variant 'Z'" in e for e in errors), errors)
 
-    def test_sem_thumb_json(self):
-        erros, _ = check(META, thumb=None)
-        self.assertTrue(any("thumb.json" in e for e in erros), erros)
+    def test_no_thumb_json(self):
+        errors, _ = check(META, thumb=None)
+        self.assertTrue(any("thumb.json" in e for e in errors), errors)
 
-    def test_capa_provisoria(self):
-        erros, _ = check(meta(capa={"variante": "A", "motivo": "PROVISÓRIA: escolher depois do thumb.py"}))
-        self.assertTrue(any("provisoria" in e for e in erros), erros)
+    def test_provisional_cover(self):
+        for reason in ("PROVISIONAL: pick after thumb.py", "PROVISÓRIA: escolher depois do thumb.py"):
+            with self.subTest(reason=reason):
+                errors, _ = check(meta(cover={"variant": "A", "reason": reason}))
+                self.assertTrue(any("provisional" in e for e in errors), errors)
 
-    def test_sem_pasta_de_capas(self):
-        erros, _ = check(META, capas=None)
-        self.assertTrue(any("pasta de capas" in e for e in erros), erros)
+    def test_no_covers_folder(self):
+        errors, _ = check(META, covers=None)
+        self.assertTrue(any("covers folder" in e for e in errors), errors)
 
-    def test_arquivo_da_capa_faltando(self):
-        erros, _ = check(META, capas={publish.arquivos_capa("A")["9x16"]})
-        self.assertTrue(any("capa_A_16x9" in e for e in erros), erros)
+    def test_cover_file_missing(self):
+        errors, _ = check(META, covers={publish.cover_files("A")["9x16"]})
+        self.assertTrue(any("cover_A_16x9" in e for e in errors), errors)
 
-    def test_duracao_zero_e_erro(self):
-        erros, _ = check(META, dur=0.0)
-        self.assertTrue(any("0.0 s" in e for e in erros), erros)
+    def test_zero_duration_is_error(self):
+        errors, _ = check(META, dur=0.0)
+        self.assertTrue(any("0.0 s" in e for e in errors), errors)
 
-    def test_duracao_acima_do_short_avisa_com_uma_casa(self):
-        erros, avisos = check(META, dur=230.0)
-        self.assertEqual(erros, [])
-        self.assertTrue(any("230.0 s" in a for a in avisos), avisos)
+    def test_duration_over_short_warns_with_one_decimal(self):
+        errors, warnings = check(META, dur=230.0)
+        self.assertEqual(errors, [])
+        self.assertTrue(any("230.0 s" in a for a in warnings), warnings)
 
 
-def fake_ffprobe(bindir, saida):
+def fake_ffprobe(bindir, output):
     p = os.path.join(bindir, "ffprobe")
     with open(p, "w") as f:
-        f.write(f"#!/bin/sh\necho '{saida}'\n")
+        f.write(f"#!/bin/sh\necho '{output}'\n")
     os.chmod(p, 0o755)
 
 
-class Duracao(unittest.TestCase):
-    def test_video_inexistente(self):
-        with self.assertRaisesRegex(ValueError, "video nao encontrado"):
-            publish.duracao("/nao/existe.mp4")
+class Duration(unittest.TestCase):
+    def test_missing_video(self):
+        with self.assertRaisesRegex(ValueError, "video not found"):
+            publish.duration("/does/not/exist.mp4")
 
-    def test_sem_ffprobe(self):
+    def test_no_ffprobe(self):
         with tempfile.TemporaryDirectory() as d:
             v = os.path.join(d, "f.mp4"); open(v, "w").close()
             with mock.patch.dict(os.environ, {"PATH": d}):
-                with self.assertRaisesRegex(ValueError, "ffprobe nao encontrado"):
-                    publish.duracao(v)
+                with self.assertRaisesRegex(ValueError, "ffprobe not found"):
+                    publish.duration(v)
 
-    def test_arredonda_e_saida_ilegivel(self):
+    def test_rounds_and_unreadable_output(self):
         with tempfile.TemporaryDirectory() as d:
             v = os.path.join(d, "f.mp4"); open(v, "w").close()
             fake_ffprobe(d, "45.47")
             with mock.patch.dict(os.environ, {"PATH": d}):
-                self.assertEqual(publish.duracao(v), 45.5)
+                self.assertEqual(publish.duration(v), 45.5)
             fake_ffprobe(d, "N/A")
             with mock.patch.dict(os.environ, {"PATH": d}):
-                with self.assertRaisesRegex(ValueError, "nao consegui ler a duracao"):
-                    publish.duracao(v)
+                with self.assertRaisesRegex(ValueError, "could not read the duration"):
+                    publish.duration(v)
 
 
 class Main(unittest.TestCase):
-    """Ponta a ponta: pasta do video em diretorio temporario (--name absoluto) e ffprobe falso no PATH."""
+    """End to end: video folder in a temp dir (absolute --name) and a fake ffprobe in PATH."""
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         d = self.tmp.name
         self.bin = os.path.join(d, "bin"); os.mkdir(self.bin)
         fake_ffprobe(self.bin, "62.34")
-        self.vdir = os.path.join(d, "meu-video")
-        os.makedirs(os.path.join(self.vdir, "capas"))
-        for f in CAPAS: open(os.path.join(self.vdir, "capas", f), "w").close()
+        self.vdir = os.path.join(d, "my-video")
+        os.makedirs(os.path.join(self.vdir, "covers"))
+        for f in COVERS: open(os.path.join(self.vdir, "covers", f), "w").close()
         self.video = os.path.join(self.vdir, "final.mp4"); open(self.video, "w").close()
         self.write("meta.json", META); self.write("thumb.json", THUMB)
-        self.out = os.path.join(self.vdir, "publicar.md")
+        self.out = os.path.join(self.vdir, "publish.md")
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -281,7 +291,7 @@ class Main(unittest.TestCase):
     def read(self):
         with open(self.out, "rb") as f: return f.read()
 
-    def test_gera_deterministico_sem_data(self):
+    def test_deterministic_without_date(self):
         rc, _ = self.run_main()
         self.assertEqual(rc, 0)
         a = self.read()
@@ -289,52 +299,60 @@ class Main(unittest.TestCase):
         self.assertEqual(a, self.read())
         txt = a.decode("utf-8")
         self.assertNotRegex(txt, r"\d{4}-\d{2}-\d{2}")
-        self.assertIn("# Publicar — meu-video", txt)
-        self.assertIn("duração 1:02", txt)
-        self.assertIn("capa_A_9x16_1080x1920.png", txt)
+        self.assertIn("# Publish — my-video", txt)
+        self.assertIn("duration 1:02", txt)
+        self.assertNotIn("language", txt)  # no lang in meta.json: nothing shown
+        self.assertIn("cover_A_9x16_1080x1920.png", txt)
         self.assertIn("~14 s", txt)
-        self.assertIn(f"as {YT['hashtags_acima_do_titulo']} primeiras hashtags", txt)
+        self.assertIn(f"the first {YT['hashtags_above_title']} hashtags", txt)
 
-    def test_video_inexistente_sem_traceback(self):
-        rc, out = self.run_main(video=os.path.join(self.vdir, "nao.mp4"))
+    def test_lang_shown_and_content_kept_as_written(self):
+        self.write("meta.json", meta(lang="en", titles=["The 4 parts of a good prompt"]))
+        self.assertEqual(self.run_main()[0], 0)
+        txt = self.read().decode("utf-8")
+        self.assertIn("language en", txt)
+        self.assertIn("The 4 parts of a good prompt", txt)
+
+    def test_missing_video_without_traceback(self):
+        rc, out = self.run_main(video=os.path.join(self.vdir, "no.mp4"))
         self.assertEqual(rc, 1)
-        self.assertIn("ERRO: video nao encontrado", out)
+        self.assertIn("ERROR: video not found", out)
 
-    def test_meta_json_quebrado(self):
-        self.write("meta.json", "{ nao e json")
+    def test_broken_meta_json(self):
+        self.write("meta.json", "{ not json")
         rc, out = self.run_main()
         self.assertEqual(rc, 1)
-        self.assertIn("ERRO: meta.json ilegivel", out)
+        self.assertIn("ERROR: meta.json unreadable", out)
 
-    def test_meta_json_ausente_lista_campos(self):
+    def test_missing_meta_json_lists_fields(self):
         os.remove(os.path.join(self.vdir, "meta.json"))
         rc, out = self.run_main()
         self.assertEqual(rc, 1)
-        self.assertIn("hashtags_motivo", out)
+        self.assertIn("hashtags_reason", out)
 
-    def test_capas_em_outra_pasta(self):
-        rc, out = self.run_main("--capas", os.path.join(self.vdir, "nao-existe"))
+    def test_covers_in_another_folder(self):
+        rc, out = self.run_main("--covers", os.path.join(self.vdir, "does-not-exist"))
         self.assertEqual(rc, 1)
-        self.assertIn("pasta de capas", out)
+        self.assertIn("covers folder", out)
 
-    def test_erro_nao_deixa_publicar_md_velho(self):
+    def test_error_does_not_leave_old_publish_md(self):
         self.assertEqual(self.run_main()[0], 0)
-        velho = self.read()
-        self.write("meta.json", meta(capa={"variante": "Z", "motivo": "x"}))
+        old = self.read()
+        self.write("meta.json", meta(cover={"variant": "Z", "reason": "x"}))
         rc, out = self.run_main()
         self.assertEqual(rc, 1)
         self.assertFalse(os.path.exists(self.out))
-        self.assertIn("desatualizado", out)
-        with open(self.out + ".desatualizado", "rb") as f: self.assertEqual(f.read(), velho)
+        self.assertIn("stale", out)
+        with open(self.out + ".stale", "rb") as f: self.assertEqual(f.read(), old)
         self.write("meta.json", META)
         self.assertEqual(self.run_main()[0], 0)
-        self.assertFalse(os.path.exists(self.out + ".desatualizado"))
+        self.assertFalse(os.path.exists(self.out + ".stale"))
 
-    def test_erro_sem_publicar_md_nao_cria_nada(self):
-        self.write("meta.json", meta(titulos="x"))
+    def test_error_without_publish_md_creates_nothing(self):
+        self.write("meta.json", meta(titles="x"))
         rc, _ = self.run_main()
         self.assertEqual(rc, 1)
-        self.assertEqual(sorted(f for f in os.listdir(self.vdir) if f.startswith("publicar")), [])
+        self.assertEqual(sorted(f for f in os.listdir(self.vdir) if f.startswith("publish")), [])
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Baseado em edit_video.py de video-editing-skill (MIT, (c) 2026 Frank Heijdenrijk); ver THIRD_PARTY_LICENSES.md.
+# Based on edit_video.py from video-editing-skill (MIT, (c) 2026 Frank Heijdenrijk); see THIRD_PARTY_LICENSES.md.
 """Edit a talking-head video: cut pauses, fillers, stutters and retakes, add punch-ins on jump
 cuts, clean and level the audio, and write captions and chapters.
 

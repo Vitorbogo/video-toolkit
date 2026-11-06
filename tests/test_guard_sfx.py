@@ -1,4 +1,4 @@
-"""Hook guard.py: sfx/*.wav é a única mídia que pode entrar no git.
+"""Hook guard.py: sfx/*.wav is the only media allowed in git.
 
     python3 -m unittest discover tests
 """
@@ -13,11 +13,11 @@ ADD = "git " + "add "
 
 
 class SfxNoGit(unittest.TestCase):
-    def test_libera_efeitos_de_sfx(self):
-        for c in [ADD + "sfx/whoosh-curto.wav", ADD + "sfx/*.wav", ADD + "./sfx/pop-blip.wav src/vtk/sfx.py", ADD + "sfx/"]:
+    def test_allows_sfx_effects(self):
+        for c in [ADD + "sfx/whoosh-short.wav", ADD + "sfx/*.wav", ADD + "./sfx/pop-blip.wav src/vtk/sfx.py", ADD + "sfx/"]:
             self.assertIsNone(guard.check(c), c)
 
-    def test_continua_bloqueando_o_resto(self):
+    def test_still_blocks_the_rest(self):
         for c in [ADD + "work/x.wav sfx/a.wav", ADD + "foo/sfx/a.wav", ADD + "-" + "f sfx/a.wav", ADD + "final.mp4",
                   ADD + "sfx/a.wav.mov"]:
             self.assertIsNotNone(guard.check(c), c)
