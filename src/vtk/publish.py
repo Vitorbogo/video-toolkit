@@ -1,279 +1,283 @@
 #!/usr/bin/env python3
-"""Valida os metadados de publicacao de um video e gera videos/<nome>/publicar.md (pronto para copiar e colar).
+"""Validates a video's publishing metadata and generates videos/<name>/publish.md (ready to copy and paste).
 
-A parte criativa (titulos, descricao, hashtags, recomendacao de capa) e escrita pelo Claude em
-videos/<nome>/meta.json, seguindo .claude/skills/publicar-video/SKILL.md.
-Este script e a parte DETERMINISTICA: confere tipos e limites das plataformas (presets/publish.json), formato
-das hashtags, a capa escolhida (thumb.json + arquivos em capas/) e a duracao, e monta o arquivo final.
-Mesmas entradas (meta.json, thumb.json, preset, duracao do video) = mesmo publicar.md, byte a byte (nao tem data).
-Sai com codigo 1 se houver ERRO: nada e gerado e um publicar.md antigo vira publicar.md.desatualizado.
-AVISOS entram no topo do publicar.md.
+The creative part (titles, description, hashtags, cover recommendation) is written by Claude in
+videos/<name>/meta.json, following .claude/skills/publish-video/SKILL.md, in the language spoken in the video.
+This script is the DETERMINISTIC part: checks types and platform limits (presets/publish.json), hashtag format,
+the chosen cover (thumb.json + files in covers/) and the duration, and builds the final file.
+Same inputs (meta.json, thumb.json, preset, video duration) = same publish.md, byte for byte (no date).
+Exits with code 1 on any ERROR: nothing is generated and an old publish.md becomes publish.md.stale.
+WARNINGS go at the top of publish.md.
 
-  python3 src/vtk/publish.py --name <nome> --video <mp4 final>   # capas: videos/<nome>/capas (ou --capas)
+  python3 src/vtk/publish.py --name <name> --video <final mp4>   # covers: videos/<name>/covers (or --covers)
 """
 import argparse, json, os, re, shutil, subprocess, sys, unicodedata
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-CAMPOS = {
-    "titulos": "lista de 1 a 3 titulos (o primeiro e o recomendado)",
-    "descricao": "descricao do YouTube, sem hashtags (gancho nos primeiros 100 caracteres)",
-    "legenda_tiktok": "legenda do TikTok, sem hashtags",
-    "hashtags": '{"tiktok": [...], "youtube": [...]}, cada uma com "#"',
-    "hashtags_motivo": "1 frase: por que essas hashtags (ou por que nenhuma)",
-    "capa": '{"variante": "A|B|C" (de thumb.json), "motivo": "..."}',
+FIELDS = {
+    "titles": "list of 1 to 3 titles (the first is the recommended one)",
+    "description": "YouTube description, without hashtags (hook in the first 100 characters)",
+    "tiktok_caption": "TikTok caption, without hashtags",
+    "hashtags": '{"tiktok": [...], "youtube": [...]}, each with "#"',
+    "hashtags_reason": "1 sentence: why these hashtags (or why none)",
+    "cover": '{"variant": "A|B|C" (from thumb.json), "reason": "..."}',
 }
-OPCIONAIS = ("tags_youtube", "comentario_fixado", "notas")
-PLATAFORMAS = ("tiktok", "youtube")
+OPTIONAL = ("youtube_tags", "pinned_comment", "notes", "lang")
+PLATFORMS = ("tiktok", "youtube")
 
 RX_HASHTAG = re.compile(r"^#\w+$")
-RX_HASH_NO_TEXTO = re.compile(r"(?<![\w&/])#\w+")
+RX_HASH_IN_TEXT = re.compile(r"(?<![\w&/])#\w+")
 RX_EMOJI = re.compile("[\U0001F000-\U0001FAFF☀-➿⬀-⯿️‍]")
+RX_LANG = re.compile(r"^[a-z]{2}$")
 
 
 def nfc(x):
-    """Normaliza (NFC) todas as strings: "ã" conta 1 caractere, venha de onde vier."""
+    """Normalizes (NFC) every string: "ã" counts as 1 character, wherever it came from."""
     if isinstance(x, str): return unicodedata.normalize("NFC", x)
     if isinstance(x, list): return [nfc(v) for v in x]
     if isinstance(x, dict): return {k: nfc(v) for k, v in x.items()}
     return x
 
 
-def texto(v):
+def text(v):
     return isinstance(v, str) and v.strip() != ""
 
 
-def lista_textos(v):
-    return isinstance(v, list) and all(texto(x) for x in v)
+def text_list(v):
+    return isinstance(v, list) and all(text(x) for x in v)
 
 
-def arquivos_capa(var):
-    return {"9x16": f"capa_{var}_9x16_1080x1920.png", "16x9": f"capa_{var}_16x9_1280x720.png"}
+def cover_files(var):
+    return {"9x16": f"cover_{var}_9x16_1080x1920.png", "16x9": f"cover_{var}_16x9_1280x720.png"}
 
 
-def legenda_tt(M):
+def tiktok_caption(M):
     hs = M["hashtags"]["tiktok"]
-    return M["legenda_tiktok"] + ("\n\n" + " ".join(hs) if hs else "")
+    return M["tiktok_caption"] + ("\n\n" + " ".join(hs) if hs else "")
 
 
-def descricao_yt(M):
+def youtube_description(M):
     hs = M["hashtags"]["youtube"]
-    return M["descricao"] + ("\n\n" + " ".join(hs) if hs else "")
+    return M["description"] + ("\n\n" + " ".join(hs) if hs else "")
 
 
 def tags_total(tags):
-    """Como o YouTube conta o campo de tags: virgulas entre elas + 2 aspas em cada tag com espaco."""
+    """How YouTube counts the tags field: commas between them + 2 quotes on each tag with a space."""
     return len(",".join(tags)) + 2 * sum(1 for t in tags if " " in t)
 
 
-def duracao(video):
-    """Duracao em segundos (1 casa) via ffprobe. Levanta ValueError com mensagem legivel."""
+def duration(video):
+    """Duration in seconds (1 decimal) via ffprobe. Raises ValueError with a readable message."""
     if not os.path.isfile(video):
-        raise ValueError(f"video nao encontrado: {video}")
+        raise ValueError(f"video not found: {video}")
     if not shutil.which("ffprobe"):
-        raise ValueError("ffprobe nao encontrado no PATH (vem com o ffmpeg); sem ele nao da para conferir a duracao")
+        raise ValueError("ffprobe not found in PATH (it comes with ffmpeg); without it the duration cannot be checked")
     r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", video],
                        capture_output=True, text=True)
     try:
         return round(float(r.stdout.strip()), 1)
     except ValueError:
-        raise ValueError(f"nao consegui ler a duracao de {video} (ffprobe: {r.stderr.strip()[:200] or 'sem saida'})")
+        raise ValueError(f"could not read the duration of {video} (ffprobe: {r.stderr.strip()[:200] or 'no output'})")
 
 
-def validate(M, P, dur=None, thumb=None, capas=None):
-    """Confere o meta.json (ja em NFC) contra o preset. Devolve (erros, avisos).
-    dur: segundos ou None (nao confere); thumb: thumb.json ou None (falta); capas: nomes dos arquivos em capas/ ou None."""
-    erros, avisos = [], []
+def validate(M, P, dur=None, thumb=None, covers=None):
+    """Checks meta.json (already NFC) against the preset. Returns (errors, warnings).
+    dur: seconds or None (not checked); thumb: thumb.json or None (missing); covers: file names in covers/ or None."""
+    errors, warnings = [], []
     if not isinstance(M, dict):
-        return ["meta.json precisa ser um objeto JSON {...}"], []
-    tem = lambda k: k in M and M[k] not in ("", [], {}, None)
-    for k in CAMPOS:
-        if not tem(k): erros.append(f"campo obrigatorio ausente ou vazio: {k} ({CAMPOS[k]})")
-    for k in ("descricao", "legenda_tiktok", "hashtags_motivo"):
-        if tem(k) and not texto(M[k]): erros.append(f"{k} precisa ser texto")
-    t = M.get("titulos")
-    if tem("titulos") and not (isinstance(t, list) and 1 <= len(t) <= 3 and lista_textos(t)):
-        erros.append("titulos precisa ser lista de 1 a 3 textos nao vazios")
+        return ["meta.json must be a JSON object {...}"], []
+    has = lambda k: k in M and M[k] not in ("", [], {}, None)
+    for k in FIELDS:
+        if not has(k): errors.append(f"required field missing or empty: {k} ({FIELDS[k]})")
+    for k in ("description", "tiktok_caption", "hashtags_reason"):
+        if has(k) and not text(M[k]): errors.append(f"{k} must be text")
+    t = M.get("titles")
+    if has("titles") and not (isinstance(t, list) and 1 <= len(t) <= 3 and text_list(t)):
+        errors.append("titles must be a list of 1 to 3 non-empty texts")
     h = M.get("hashtags")
-    if tem("hashtags"):
-        if not isinstance(h, dict): erros.append('hashtags precisa ser {"tiktok": [...], "youtube": [...]}')
+    if has("hashtags"):
+        if not isinstance(h, dict): errors.append('hashtags must be {"tiktok": [...], "youtube": [...]}')
         else:
-            for p in sorted(set(h) - set(PLATAFORMAS)): erros.append(f"hashtags: plataforma desconhecida '{p}' (use {', '.join(PLATAFORMAS)})")
-            for p in PLATAFORMAS:
-                if p not in h: erros.append(f"hashtags.{p} ausente (lista vazia [] se nao houver)")
-                elif not (isinstance(h[p], list) and all(isinstance(x, str) for x in h[p])): erros.append(f"hashtags.{p} precisa ser lista de textos")
-    c = M.get("capa")
-    if tem("capa"):
-        if not isinstance(c, dict): erros.append('capa precisa ser {"variante": "...", "motivo": "..."}')
+            for p in sorted(set(h) - set(PLATFORMS)): errors.append(f"hashtags: unknown platform '{p}' (use {', '.join(PLATFORMS)})")
+            for p in PLATFORMS:
+                if p not in h: errors.append(f"hashtags.{p} missing (empty list [] if there are none)")
+                elif not (isinstance(h[p], list) and all(isinstance(x, str) for x in h[p])): errors.append(f"hashtags.{p} must be a list of texts")
+    c = M.get("cover")
+    if has("cover"):
+        if not isinstance(c, dict): errors.append('cover must be {"variant": "...", "reason": "..."}')
         else:
-            for k in ("variante", "motivo"):
-                if not texto(c.get(k)): erros.append(f"capa.{k} ausente ou vazio")
-    if "tags_youtube" in M and not lista_textos(M["tags_youtube"]):
-        erros.append("tags_youtube precisa ser lista de textos nao vazios")
-    for k in ("comentario_fixado", "notas"):
-        if k in M and not isinstance(M[k], str): erros.append(f"{k} precisa ser texto")
-    for k in sorted(set(M) - set(CAMPOS) - set(OPCIONAIS)): avisos.append(f"campo desconhecido no meta.json (ignorado): {k}")
-    if erros:
-        return erros, avisos
+            for k in ("variant", "reason"):
+                if not text(c.get(k)): errors.append(f"cover.{k} missing or empty")
+    if "youtube_tags" in M and not text_list(M["youtube_tags"]):
+        errors.append("youtube_tags must be a list of non-empty texts")
+    for k in ("pinned_comment", "notes"):
+        if k in M and not isinstance(M[k], str): errors.append(f"{k} must be text")
+    if "lang" in M and not (isinstance(M["lang"], str) and RX_LANG.match(M["lang"])):
+        errors.append(f"lang must be a two-letter lowercase language code, e.g. \"pt\" or \"en\" (got {M['lang']!r})")
+    for k in sorted(set(M) - set(FIELDS) - set(OPTIONAL)): warnings.append(f"unknown field in meta.json (ignored): {k}")
+    if errors:
+        return errors, warnings
 
-    L, H = P["limites"], P["hashtags"]
+    L, H = P["limits"], P["hashtags"]
     yt, tt = L["youtube"], L["tiktok"]
-    for i, t in enumerate(M["titulos"], 1):
-        if len(t) > yt["titulo_max"]: erros.append(f"titulo {i} tem {len(t)} caracteres (max {yt['titulo_max']})")
-        elif len(t) > yt["titulo_visivel_feed"]:
-            avisos.append(f"titulo {i} tem {len(t)} caracteres; no feed so aparecem ~{yt['titulo_visivel_feed']}. Ponha o principal no comeco.")
+    for i, t in enumerate(M["titles"], 1):
+        if len(t) > yt["title_max"]: errors.append(f"title {i} has {len(t)} characters (max {yt['title_max']})")
+        elif len(t) > yt["title_visible_feed"]:
+            warnings.append(f"title {i} has {len(t)} characters; the feed only shows ~{yt['title_visible_feed']}. Put the key point first.")
 
-    textos = [(f"titulo {i}", t) for i, t in enumerate(M["titulos"], 1)] + [("descricao", M["descricao"]), ("legenda_tiktok", M["legenda_tiktok"])]
-    for nome, s in textos:
-        achou = RX_HASH_NO_TEXTO.findall(s)
-        if achou: erros.append(f"{nome} tem hashtag no texto {achou}: hashtags vao so nas listas de hashtags")
-        if nome != "legenda_tiktok" and re.search("[<>]", s): erros.append(f"{nome} tem '<' ou '>' (o YouTube nao aceita)")
-    com_emoji = [n for n, s in textos if RX_EMOJI.search(s)]
-    if com_emoji: avisos.append(f"emoji em {', '.join(com_emoji)}: a plataforma pode contar diferente (confira o limite ao colar)")
+    texts = [(f"title {i}", t) for i, t in enumerate(M["titles"], 1)] + [("description", M["description"]), ("tiktok_caption", M["tiktok_caption"])]
+    for name, s in texts:
+        found = RX_HASH_IN_TEXT.findall(s)
+        if found: errors.append(f"{name} has a hashtag in the text {found}: hashtags go only in the hashtag lists")
+        if name != "tiktok_caption" and re.search("[<>]", s): errors.append(f"{name} has '<' or '>' (YouTube does not accept them)")
+    with_emoji = [n for n, s in texts if RX_EMOJI.search(s)]
+    if with_emoji: warnings.append(f"emoji in {', '.join(with_emoji)}: the platform may count differently (check the limit when pasting)")
 
-    for p in PLATAFORMAS:
+    for p in PLATFORMS:
         hs = M["hashtags"][p]
         bad = [x for x in hs if not RX_HASHTAG.match(x)]
-        if bad: erros.append(f"hashtags invalidas em {p} (precisa '#' e sem espaco/pontuacao): {bad}")
-        vistos, rep = set(), []
+        if bad: errors.append(f"invalid hashtags in {p} (need '#' and no space/punctuation): {bad}")
+        seen, rep = set(), []
         for x in hs:
-            if x.casefold() in vistos: rep.append(x)
-            vistos.add(x.casefold())
-        if rep: erros.append(f"hashtags repetidas em {p} (maiuscula/minuscula nao diferencia): {rep}")
-        if hs and not (H["recomendado_min"] <= len(hs) <= H["recomendado_max"]):
-            avisos.append(f"{p}: {len(hs)} hashtags (recomendado {H['recomendado_min']} a {H['recomendado_max']}). Se for de proposito, explique em hashtags_motivo.")
+            if x.casefold() in seen: rep.append(x)
+            seen.add(x.casefold())
+        if rep: errors.append(f"repeated hashtags in {p} (case-insensitive): {rep}")
+        if hs and not (H["recommended_min"] <= len(hs) <= H["recommended_max"]):
+            warnings.append(f"{p}: {len(hs)} hashtags (recommended {H['recommended_min']} to {H['recommended_max']}). If on purpose, explain it in hashtags_reason.")
     if len(M["hashtags"]["youtube"]) > yt["hashtags_max"]:
-        erros.append(f"{len(M['hashtags']['youtube'])} hashtags no YouTube (max {yt['hashtags_max']}): acima disso todas sao ignoradas")
+        errors.append(f"{len(M['hashtags']['youtube'])} hashtags on YouTube (max {yt['hashtags_max']}): above that all of them are ignored")
 
-    n = len(legenda_tt(M))
-    if n > tt["legenda_max"]: erros.append(f"legenda do TikTok + hashtags tem {n} caracteres (max {tt['legenda_max']})")
-    d = descricao_yt(M)
-    if len(d) > yt["descricao_max"]: erros.append(f"descricao + hashtags tem {len(d)} caracteres (max {yt['descricao_max']})")
-    elif len(d.encode("utf-8")) > yt["descricao_max"]:
-        avisos.append(f"descricao + hashtags tem {len(d.encode('utf-8'))} bytes em UTF-8 (> {yt['descricao_max']}); se o limite for em bytes, o YouTube corta")
-    tg = M.get("tags_youtube", [])
+    n = len(tiktok_caption(M))
+    if n > tt["caption_max"]: errors.append(f"TikTok caption + hashtags has {n} characters (max {tt['caption_max']})")
+    d = youtube_description(M)
+    if len(d) > yt["description_max"]: errors.append(f"description + hashtags has {len(d)} characters (max {yt['description_max']})")
+    elif len(d.encode("utf-8")) > yt["description_max"]:
+        warnings.append(f"description + hashtags has {len(d.encode('utf-8'))} bytes in UTF-8 (> {yt['description_max']}); if the limit is in bytes, YouTube truncates it")
+    tg = M.get("youtube_tags", [])
     if tags_total(tg) > yt["tags_total_max"]:
-        erros.append(f"tags do YouTube somam {tags_total(tg)} caracteres, contando virgulas e aspas das tags com espaco (max {yt['tags_total_max']})")
+        errors.append(f"YouTube tags add up to {tags_total(tg)} characters, counting commas and quotes on tags with a space (max {yt['tags_total_max']})")
 
     if dur is not None:
-        if dur <= 0: erros.append(f"duracao do video e {dur:.1f} s: arquivo vazio ou corrompido")
-        elif dur > yt["short_duracao_max_s"]:
-            avisos.append(f"video com {dur:.1f} s: acima de {yt['short_duracao_max_s']} s, o YouTube nao trata como Short (vira video vertical normal).")
+        if dur <= 0: errors.append(f"video duration is {dur:.1f} s: empty or corrupted file")
+        elif dur > yt["short_max_duration_s"]:
+            warnings.append(f"video is {dur:.1f} s long: above {yt['short_max_duration_s']} s, YouTube does not treat it as a Short (it becomes a regular vertical video).")
 
-    var, motivo = M["capa"]["variante"], M["capa"]["motivo"]
-    if motivo.strip().upper().startswith("PROVIS"):
-        erros.append("capa ainda provisoria: olhe as capas do thumb.py e atualize capa.variante e capa.motivo")
+    var, reason = M["cover"]["variant"], M["cover"]["reason"]
+    if reason.strip().upper().startswith("PROVIS"):
+        errors.append("cover still provisional: look at the thumb.py covers and update cover.variant and cover.reason")
     if thumb is None:
-        erros.append("falta thumb.json do video: a capa e escolhida entre as variantes dele")
+        errors.append("the video's thumb.json is missing: the cover is chosen among its variants")
     else:
-        nomes = [v.get("nome") for v in thumb.get("variantes") or [] if isinstance(v, dict)]
-        if var not in nomes:
-            opc = nomes or 'nenhuma; ponha "variantes" no thumb.json'
-            erros.append(f"variante de capa '{var}' nao existe em thumb.json (variantes: {opc})")
-    if capas is None:
-        erros.append("pasta de capas nao encontrada (rode thumb.py)")
+        names = [v.get("name") for v in thumb.get("variants") or [] if isinstance(v, dict)]
+        if var not in names:
+            opts = names or 'none; add "variants" to thumb.json'
+            errors.append(f"cover variant '{var}' does not exist in thumb.json (variants: {opts})")
+    if covers is None:
+        errors.append("covers folder not found (run thumb.py)")
     else:
-        for f in arquivos_capa(var).values():
-            if f not in capas: erros.append(f"capa nao encontrada: {f} (rode thumb.py)")
-    return erros, avisos
+        for f in cover_files(var).values():
+            if f not in covers: errors.append(f"cover not found: {f} (run thumb.py)")
+    return errors, warnings
 
 
-def render(nome, M, P, dur, thumb, avisos, usados=None):
-    """Monta o publicar.md. So depende das entradas (sem data, sem caminho absoluto).
-    usados: capas/capas.json do thumb.py (tempos reais, inclusive os "auto" do rosto neutro)."""
-    yt, tt = P["limites"]["youtube"], P["limites"]["tiktok"]
-    var = M["capa"]["variante"]
-    arqs = arquivos_capa(var)
-    vinfo = next((v for v in (thumb or {}).get("variantes") or [] if isinstance(v, dict) and v.get("nome") == var), None)
-    corte = lambda s, n: " ".join(s[:n].split()) + ("…" if len(s) > n else "")  # numa linha so
+def render(name, M, P, dur, thumb, warnings, used=None):
+    """Builds publish.md. Depends only on the inputs (no date, no absolute path).
+    used: covers/covers.json from thumb.py (actual times, including the neutral-face "auto" ones)."""
+    yt, tt = P["limits"]["youtube"], P["limits"]["tiktok"]
+    var = M["cover"]["variant"]
+    files = cover_files(var)
+    vinfo = next((v for v in (thumb or {}).get("variants") or [] if isinstance(v, dict) and v.get("name") == var), None)
+    clip = lambda s, n: " ".join(s[:n].split()) + ("…" if len(s) > n else "")  # on a single line
     mmss = lambda s: f"{int(round(s)) // 60}:{int(round(s)) % 60:02d}"
-    o = [f"# Publicar — {nome}\n"]
-    o.append("_Gerado por `publish.py`" + (f" · duração {mmss(dur)}" if dur else "") + "_\n")
-    if avisos:
-        o.append("> [!warning] Avisos\n" + "\n".join(f"> - {x}" for x in avisos) + "\n")
-    o.append("## Capa\n")
-    o.append(f"**Recomendada: variante {var}.** {M['capa']['motivo']}\n")
-    o.append(f"- Arquivos: `{arqs['9x16']}` (vertical) e `{arqs['16x9']}` (YouTube)")
-    t = ((usados or {}).get(var) or {}).get("vertical", {}).get("tempo_s")
+    o = [f"# Publish — {name}\n"]
+    o.append("_Generated by `publish.py`" + (f" · language {M['lang']}" if M.get("lang") else "")
+             + (f" · duration {mmss(dur)}" if dur else "") + "_\n")
+    if warnings:
+        o.append("> [!warning] Warnings\n" + "\n".join(f"> - {x}" for x in warnings) + "\n")
+    o.append("## Cover\n")
+    o.append(f"**Recommended: variant {var}.** {M['cover']['reason']}\n")
+    o.append(f"- Files: `{files['9x16']}` (vertical) and `{files['16x9']}` (YouTube)")
+    t = ((used or {}).get(var) or {}).get("vertical", {}).get("time_s")
     if t is None and vinfo and isinstance(vinfo.get("vertical"), dict):
-        t = vinfo["vertical"].get("tempo_s")
+        t = vinfo["vertical"].get("time_s")
     if isinstance(t, (int, float)) and not isinstance(t, bool):
-        o.append(f"- TikTok: no editor de capa, escolha o quadro em ~{t:g} s (é o quadro usado na variante {var}).")
-    o.append("- YouTube: envie a capa 16:9 como miniatura personalizada. _Para Shorts, confirme se o Studio aceita miniatura personalizada no seu caso (não verificado)._\n")
+        o.append(f"- TikTok: in the cover editor, pick the frame at ~{t:g} s (the frame used in variant {var}).")
+    o.append("- YouTube: upload the 16:9 cover as a custom thumbnail. _For Shorts, check whether Studio accepts a custom thumbnail in your case (not verified)._\n")
     o.append("## TikTok\n")
-    o.append("Legenda (cole inteira):\n\n```text\n" + legenda_tt(M) + "\n```\n")
-    o.append(f"Antes do \"mais\" (~{tt['legenda_visivel']} caracteres): {corte(M['legenda_tiktok'], tt['legenda_visivel'])}\n")
+    o.append("Caption (paste all of it):\n\n```text\n" + tiktok_caption(M) + "\n```\n")
+    o.append(f"Before \"more\" (~{tt['caption_visible']} characters): {clip(M['tiktok_caption'], tt['caption_visible'])}\n")
     o.append("## YouTube\n")
-    o.append("**Título recomendado:**\n\n```text\n" + M["titulos"][0] + "\n```\n")
-    if len(M["titulos"]) > 1:
-        o.append("Alternativas:\n" + "\n".join(f"- {t}" for t in M["titulos"][1:]) + "\n")
-    o.append(f"Descrição (cole inteira; as {yt['hashtags_acima_do_titulo']} primeiras hashtags podem aparecer acima do título, "
-             "não verificado para Shorts):\n\n```text\n" + descricao_yt(M) + "\n```\n")
-    o.append(f"Antes do \"mais\" (~{yt['descricao_visivel']} caracteres): {corte(M['descricao'], yt['descricao_visivel'])}\n")
-    if M.get("tags_youtube"): o.append("Tags (campo oculto do Studio):\n\n```text\n" + ", ".join(M["tags_youtube"]) + "\n```\n")
-    if M.get("comentario_fixado"): o.append("Comentário fixado:\n\n```text\n" + M["comentario_fixado"] + "\n```\n")
-    o.append("## Hashtags: por quê\n\n" + M["hashtags_motivo"] + "\n")
-    if M.get("notas"): o.append("## Notas\n\n" + M["notas"] + "\n")
-    o.append("## Antes de postar\n\n" + "\n".join(f"- [ ] {c}" for c in P["checklist"]) + "\n")
+    o.append("**Recommended title:**\n\n```text\n" + M["titles"][0] + "\n```\n")
+    if len(M["titles"]) > 1:
+        o.append("Alternatives:\n" + "\n".join(f"- {t}" for t in M["titles"][1:]) + "\n")
+    o.append(f"Description (paste all of it; the first {yt['hashtags_above_title']} hashtags may appear above the title, "
+             "not verified for Shorts):\n\n```text\n" + youtube_description(M) + "\n```\n")
+    o.append(f"Before \"more\" (~{yt['description_visible']} characters): {clip(M['description'], yt['description_visible'])}\n")
+    if M.get("youtube_tags"): o.append("Tags (hidden Studio field):\n\n```text\n" + ", ".join(M["youtube_tags"]) + "\n```\n")
+    if M.get("pinned_comment"): o.append("Pinned comment:\n\n```text\n" + M["pinned_comment"] + "\n```\n")
+    o.append("## Hashtags: why\n\n" + M["hashtags_reason"] + "\n")
+    if M.get("notes"): o.append("## Notes\n\n" + M["notes"] + "\n")
+    o.append("## Before posting\n\n" + "\n".join(f"- [ ] {c}" for c in P["checklist"]) + "\n")
     return "\n".join(o)
 
 
-def ler_json(path, rotulo, erros):
+def read_json(path, label, errors):
     try:
         with open(path, encoding="utf-8") as f: return json.load(f)
     except (OSError, ValueError) as e:
-        erros.append(f"{rotulo} ilegivel ({path}): {e}")
+        errors.append(f"{label} unreadable ({path}): {e}")
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Valida videos/<nome>/meta.json e gera publicar.md")
-    ap.add_argument("--name", required=True, help="pasta em videos/<nome>/ (ou caminho absoluto da pasta)")
-    ap.add_argument("--video", required=True, help="mp4 final (confere a duracao)")
-    ap.add_argument("--capas", help="pasta das capas do thumb.py (padrao: videos/<nome>/capas)")
+    ap = argparse.ArgumentParser(description="Validates videos/<name>/meta.json and generates publish.md")
+    ap.add_argument("--name", required=True, help="folder videos/<name>/ (or absolute path of the folder)")
+    ap.add_argument("--video", required=True, help="final mp4 (checks the duration)")
+    ap.add_argument("--covers", help="folder with the thumb.py covers (default: videos/<name>/covers)")
     ap.add_argument("--preset", default="presets/publish.json")
-    ap.add_argument("--out", help="padrao: videos/<nome>/publicar.md")
+    ap.add_argument("--out", help="default: videos/<name>/publish.md")
     a = ap.parse_args(argv)
 
     vdir = a.name if os.path.isabs(a.name) else os.path.join(ROOT, "videos", a.name)
-    nome = os.path.basename(os.path.normpath(vdir))
-    out = os.path.abspath(a.out) if a.out else os.path.join(vdir, "publicar.md")
-    capas = a.capas or os.path.join(vdir, "capas")
+    name = os.path.basename(os.path.normpath(vdir))
+    out = os.path.abspath(a.out) if a.out else os.path.join(vdir, "publish.md")
+    covers = a.covers or os.path.join(vdir, "covers")
     mp, tp = os.path.join(vdir, "meta.json"), os.path.join(vdir, "thumb.json")
-    erros, avisos = [], []
+    errors, warnings = [], []
 
-    P = ler_json(a.preset if os.path.isabs(a.preset) else os.path.join(ROOT, a.preset), "preset", erros)
+    P = read_json(a.preset if os.path.isabs(a.preset) else os.path.join(ROOT, a.preset), "preset", errors)
     M = None
     if not os.path.exists(mp):
-        erros.append(f"falta {mp}. Campos obrigatorios:\n" + "\n".join(f"  - {k}: {v}" for k, v in CAMPOS.items())
-                     + f"\nOpcionais: {', '.join(OPCIONAIS)}. Regras: .claude/skills/publicar-video/SKILL.md")
+        errors.append(f"{mp} is missing. Required fields:\n" + "\n".join(f"  - {k}: {v}" for k, v in FIELDS.items())
+                      + f"\nOptional: {', '.join(OPTIONAL)}. Rules: .claude/skills/publish-video/SKILL.md")
     else:
-        M = ler_json(mp, "meta.json", erros)
-    thumb = ler_json(tp, "thumb.json", erros) if os.path.exists(tp) else None
+        M = read_json(mp, "meta.json", errors)
+    thumb = read_json(tp, "thumb.json", errors) if os.path.exists(tp) else None
     dur = None
-    try: dur = duracao(a.video)
-    except ValueError as e: erros.append(str(e))
+    try: dur = duration(a.video)
+    except ValueError as e: errors.append(str(e))
     if M is not None and P is not None:
         M = nfc(M)
-        e2, avisos = validate(M, P, dur, thumb, set(os.listdir(capas)) if os.path.isdir(capas) else None)
-        erros += e2
+        e2, warnings = validate(M, P, dur, thumb, set(os.listdir(covers)) if os.path.isdir(covers) else None)
+        errors += e2
 
-    velho = out + ".desatualizado"
-    if erros:
-        print("\n".join("ERRO: " + e for e in erros))
+    stale = out + ".stale"
+    if errors:
+        print("\n".join("ERROR: " + e for e in errors))
         if os.path.exists(out):
-            os.replace(out, velho)
-            print(f"publicar.md antigo renomeado para {os.path.basename(velho)} (nao use: nao bate com o meta.json atual)")
+            os.replace(out, stale)
+            print(f"old {os.path.basename(out)} renamed to {os.path.basename(stale)} (do not use it: it does not match the current meta.json)")
         return 1
     tmp = out + ".tmp"
-    usados = None
+    used = None
     try:
-        with open(os.path.join(capas, "capas.json"), encoding="utf-8") as f: usados = json.load(f)
+        with open(os.path.join(covers, "covers.json"), encoding="utf-8") as f: used = json.load(f)
     except (OSError, ValueError): pass
-    with open(tmp, "w", encoding="utf-8", newline="\n") as f: f.write(render(nome, M, P, dur, thumb, avisos, usados))
+    with open(tmp, "w", encoding="utf-8", newline="\n") as f: f.write(render(name, M, P, dur, thumb, warnings, used))
     os.replace(tmp, out)
-    if os.path.exists(velho): os.remove(velho)
-    print(f"ok: {out}  ({len(avisos)} aviso(s))")
-    for x in avisos: print("  aviso:", x)
+    if os.path.exists(stale): os.remove(stale)
+    print(f"ok: {out}  ({len(warnings)} warning(s))")
+    for x in warnings: print("  WARNING:", x)
     return 0
 
 

@@ -1,4 +1,4 @@
-"""Hook .claude/hooks/guard.py: bloqueia o obvio e deixa passar o comando legitimo.
+"""Hook .claude/hooks/guard.py: blocks the obvious and lets legitimate commands through.
 
     python3 -m unittest discover tests
 """
@@ -13,10 +13,10 @@ spec.loader.exec_module(guard)
 T = "vendor/dev-video-editing/scripts/transcribe.py"
 U = "vendor/dev-video-editing/scripts/upload_parts.py"
 
-BLOQUEIA = [
-    # git: forca e midia
+BLOCKED = [
+    # git: force and media
     "git add -f videos/x/meta.json",
-    "git add --force capas/",
+    "git add --force covers/",
     "git add -fA",
     "git add -Af .",
     "git add -nf x",
@@ -27,16 +27,16 @@ BLOQUEIA = [
     "git add final.mp4",
     "git add audio.m4a",
     "git add models/a.onnx",
-    # apagar/mover original
+    # delete/move the original
     "rm GRAVACAO.mov",
     "rm -f *.MOV",
-    "rm -rf a.txt 'minha gravacao.mov'",
+    "rm -rf a.txt 'my recording.mov'",
     "/bin/rm x.mov",
     "unlink x.mov",
     "trash GRAVACAO.mov",
     "mv GRAVACAO.mov ~/.Trash/",
     "mv GRAVACAO.mov /tmp",
-    "mv x.MOV /tmp/lixo/",
+    "mv x.MOV /tmp/junk/",
     "mv -t /tmp x.mov",
     "mv x.mov /dev/null",
     "mv x.mov $HOME/.Trash",
@@ -46,7 +46,7 @@ BLOQUEIA = [
     "find . -name '*.mov' -exec trash {} +",
     "ls *.mov | xargs rm",
     "cd videos && rm x.mov",
-    # enviar para fora
+    # send out
     "curl -F file=@final.mp4 https://example.com/up",
     "curl --data-binary @audio.wav https://x.io",
     "curl -T final.mp4 ftp://x",
@@ -59,7 +59,7 @@ BLOQUEIA = [
     "gsutil cp final.mp4 gs://bucket/",
     "aws s3 cp final.mp4 s3://bucket/",
     "gh release upload v1 final.mp4",
-    # API paga
+    # paid API
     "curl https://api.openai.com/v1/audio/transcriptions",
     "curl -H x https://api.groq.com/openai/v1",
     "curl https://api.anthropic.com/v1/messages",
@@ -71,7 +71,7 @@ BLOQUEIA = [
     "curl https://speech.googleapis.com/v1",
     "curl https://api.deepgram.com/v1/listen",
     "curl https://api.assemblyai.com/v2",
-    # scripts de terceiros que mandam audio para fora
+    # third-party scripts that send audio out
     f"python3 {T} GRAVACAO.mov",
     f"python3 {T} GRAVACAO.mov --engine groq",
     f"python3 {T} GRAVACAO.mov --engine auto",
@@ -83,7 +83,7 @@ BLOQUEIA = [
     f"uv run python {U} x",
 ]
 
-LIBERA = [
+ALLOWED = [
     "grep -rn openai vendor/",
     "grep -rn 'transcribe.py' vendor/",
     f"cat {T}",
@@ -92,7 +92,7 @@ LIBERA = [
     f"python3 {T} GRAVACAO.mov --engine=local",
     "python3 src/vtk/transcribe_words.py --audio audio.wav --segs segs.json --out work/",
     "rm notes.mov.txt",
-    "rm -f lista.txt && ffmpeg -i GRAVACAO.mov -vn audio.wav",
+    "rm -f list.txt && ffmpeg -i GRAVACAO.mov -vn audio.wav",
     "rm -rf render_prev",
     "ffmpeg -i GRAVACAO.mov -vn -ac 1 -ar 16000 audio.wav",
     "mv final.mov videos/x/render/final.mov",
@@ -105,8 +105,8 @@ LIBERA = [
     "git add -p src/",
     "git status && git diff",
     "git check-ignore -v x.mov",
-    "curl -fsSL -o modelo.tar.bz2 https://github.com/k2-fsa/sherpa-onnx/releases/x",
-    "curl -fL -o exemplo.mp4 https://example.com/x.mp4",
+    "curl -fsSL -o model.tar.bz2 https://github.com/k2-fsa/sherpa-onnx/releases/x",
+    "curl -fL -o example.mp4 https://example.com/x.mp4",
     "rsync -av videos/ /Volumes/Backup/videos/",
     "cp GRAVACAO.mov /Volumes/Backup/",
     "python3 src/vtk/publish.py --name x --video videos/x/final.mp4",
@@ -116,34 +116,34 @@ LIBERA = [
 
 
 class Check(unittest.TestCase):
-    def test_bloqueia(self):
-        for c in BLOQUEIA:
+    def test_blocks(self):
+        for c in BLOCKED:
             with self.subTest(c=c):
                 self.assertIsNotNone(guard.check(c), c)
 
-    def test_libera(self):
-        for c in LIBERA:
+    def test_allows(self):
+        for c in ALLOWED:
             with self.subTest(c=c):
                 self.assertIsNone(guard.check(c), c)
 
 
 class Hook(unittest.TestCase):
-    """O script como o Claude Code chama: JSON no stdin, exit 2 + stderr para bloquear."""
+    """The script as Claude Code calls it: JSON on stdin, exit 2 + stderr to block."""
     def run_hook(self, payload):
         return subprocess.run([sys.executable, HOOK], input=payload, capture_output=True, text=True)
 
-    def test_exit_2_e_mensagem(self):
+    def test_exit_2_and_message(self):
         r = self.run_hook(json.dumps({"tool_input": {"command": "rm GRAVACAO.mov"}}))
         self.assertEqual(r.returncode, 2)
-        self.assertIn("BLOQUEADO", r.stderr)
+        self.assertIn("BLOCKED", r.stderr)
 
     def test_exit_0(self):
         self.assertEqual(self.run_hook(json.dumps({"tool_input": {"command": "ls"}})).returncode, 0)
 
-    def test_json_invalido_nao_bloqueia(self):
-        self.assertEqual(self.run_hook("nao e json").returncode, 0)
+    def test_invalid_json_does_not_block(self):
+        self.assertEqual(self.run_hook("not json").returncode, 0)
 
-    def test_settings_aponta_para_o_hook(self):
+    def test_settings_points_to_the_hook(self):
         with open(os.path.join(ROOT, ".claude", "settings.json"), encoding="utf-8") as f:
             S = json.load(f)
         cmds = [h["command"] for m in S["hooks"]["PreToolUse"] if "Bash" in m["matcher"].split("|") for h in m["hooks"]]

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=882, height=850" />
@@ -21,7 +21,7 @@
       html, body { width: 882px; height: 850px; overflow: hidden; background: var(--ground); }
       #root { position: relative; width: 882px; height: 850px; font-family: "Poppins", sans-serif; color: var(--ink); }
 
-      /* planilha */
+      /* spreadsheet */
       #sheet { position: absolute; left: 61px; top: 170px; width: 760px; height: 470px; background: var(--card);
                border-radius: 22px; border: 2px solid var(--line); overflow: hidden; }
       .bar { height: 56px; background: #263052; display: flex; align-items: center; padding: 0 22px; gap: 10px; }
@@ -40,7 +40,7 @@
             border: 3px solid var(--orange); opacity: 0; }
       tr.total td { border-bottom: none; color: var(--orange); font-size: 32px; font-weight: 800; }
 
-      /* chefe */
+      /* boss */
       #boss { position: absolute; right: 20px; top: 0px; width: 280px; height: 280px; z-index: 5; }
       #boss img { position: absolute; }
       #worker { left: 0; top: 0; width: 280px; height: 280px; }
@@ -54,14 +54,14 @@
     <div id="root" data-composition-id="main" data-start="0" data-duration="19.2" data-width="882" data-height="850">
       <div id="sheet" class="clip" data-start="0" data-duration="19.2" data-track-index="0">
         <div class="bar"><div class="dot"></div><div class="dot"></div><div class="dot"></div>
-          <div class="fname">planilha_do_chefe.xlsx</div></div>
+          <div class="fname">boss_spreadsheet.xlsx</div></div>
         <div class="fx"><span class="lbl">fx</span><span id="formula"></span></div>
         <table>
-          <tr class="row"><td class="n">1</td><td>Janeiro</td><td class="v"><div class="hl"></div><span>R$ 8.240</span></td></tr>
-          <tr class="row"><td class="n">2</td><td>Fevereiro</td><td class="v"><div class="hl"></div><span>R$ 7.910</span></td></tr>
-          <tr class="row"><td class="n">3</td><td>Março</td><td class="v"><div class="hl"></div><span>R$ 9.375</span></td></tr>
-          <tr class="row"><td class="n">4</td><td>Abril</td><td class="v"><div class="hl"></div><span>R$ 6.820</span></td></tr>
-          <tr class="row"><td class="n">5</td><td>Maio</td><td class="v"><div class="hl"></div><span>R$ 10.455</span></td></tr>
+          <tr class="row"><td class="n">1</td><td>January</td><td class="v"><div class="hl"></div><span>$8,240</span></td></tr>
+          <tr class="row"><td class="n">2</td><td>February</td><td class="v"><div class="hl"></div><span>$7,910</span></td></tr>
+          <tr class="row"><td class="n">3</td><td>March</td><td class="v"><div class="hl"></div><span>$9,375</span></td></tr>
+          <tr class="row"><td class="n">4</td><td>April</td><td class="v"><div class="hl"></div><span>$6,820</span></td></tr>
+          <tr class="row"><td class="n">5</td><td>May</td><td class="v"><div class="hl"></div><span>$10,455</span></td></tr>
           <tr class="row total"><td class="n">6</td><td>Total</td><td class="v"><span id="total">?</span></td></tr>
         </table>
       </div>
@@ -71,14 +71,14 @@
         <img id="angry" src="assets/face_with_symbols_on_mouth_3d.png" />
         <img id="anger" src="assets/anger_symbol_3d.png" />
       </div>
-      <div id="fast" class="clip" data-start="0" data-duration="19.2">⚡ em 2 segundos</div>
+      <div id="fast" class="clip" data-start="0" data-duration="19.2">⚡ in 2 seconds</div>
     </div>
     <script>
       window.__timelines = window.__timelines || {};
       const tl = gsap.timeline({ paused: true });
-      const F = "=SOMA(B1:B5)";
+      const F = "=SUM(B1:B5)";
       const typing = { n: 0 }, money = { v: 0 };
-      const fmt = (v) => "R$ " + Math.round(v).toLocaleString("pt-BR");
+      const fmt = (v) => "$" + Math.round(v).toLocaleString("en-US");
 
       gsap.set("#sheet", { opacity: 0, scale: 0.86, y: 30 });
       gsap.set(".row", { opacity: 0, x: -24 });
@@ -87,11 +87,11 @@
       gsap.set("#anger", { opacity: 0, scale: 0.3 });
       gsap.set("#fast", { opacity: 0, y: 20 });
 
-      // 1. "você está no trabalho e precisa abrir a planilha" (2,6 s / 4,3 s)
+      // 1. "you are at work and need to open the spreadsheet" (2.6 s / 4.3 s)
       tl.to("#sheet", { opacity: 1, scale: 1, y: 0, duration: 0.45, ease: "back.out(1.6)" }, 4.25);
       tl.to(".row", { opacity: 1, x: 0, duration: 0.3, stagger: 0.12, ease: "power2.out" }, 4.55);
 
-      // 2. "Seu chefe tá reclamando, puto" (6,4 s / 7,9 s)
+      // 2. "Your boss is complaining, furious" (6.4 s / 7.9 s)
       tl.to("#boss", { opacity: 1, x: 0, rotation: 0, duration: 0.45, ease: "back.out(1.4)" }, 6.4);
       tl.to("#anger", { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(3)" }, 6.95);
       tl.to("#anger", { scale: 1.15, duration: 0.25, repeat: 7, yoyo: true, ease: "sine.inOut" }, 7.25);
@@ -101,7 +101,7 @@
       tl.set("#sheet", { rotation: 0 }, 8.6);
       tl.to("#boss", { opacity: 0, x: 280, duration: 0.4, ease: "power2.in" }, 11.6);
 
-      // 3. "você precisa somar todos esses valores de uma forma rápida" (14,4 s / 15,0 s / 16,5 s)
+      // 3. "you need to add up all these values quickly" (14.4 s / 15.0 s / 16.5 s)
       tl.to(typing, { n: F.length, duration: 0.6, ease: "none",
         onUpdate: () => { document.getElementById("formula").textContent = F.slice(0, Math.round(typing.n)); } }, 14.3);
       tl.to(".hl", { opacity: 1, duration: 0.15, stagger: 0.12 }, 14.95);

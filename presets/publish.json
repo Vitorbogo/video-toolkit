@@ -1,35 +1,35 @@
 {
   "name": "publish",
-  "_nota": "Limites e regras por plataforma. Valores conferidos em 01/11/2026 em sites de terceiros (nao na documentacao oficial das plataformas): CONFIRMAR de vez em quando e ajustar aqui. Mudou a regra? Muda so este arquivo.",
-  "limites": {
+  "_note": "Limits and rules per platform. Values checked on 2026-11-01 on third-party sites (not in the platforms' official docs): CONFIRM now and then and adjust here. Rule changed? Change only this file.",
+  "limits": {
     "youtube": {
-      "titulo_max": 100,
-      "titulo_visivel_feed": 50,
-      "descricao_max": 5000,
-      "_nota_descricao_max": "Contado em caracteres. A API do YouTube pode contar 5000 BYTES (nao confirmado): com acento estoura antes; o publish.py avisa se os bytes UTF-8 passarem.",
-      "descricao_visivel": 100,
-      "_nota_visivel": "descricao_visivel (e legenda_visivel no tiktok): caracteres antes do 'mais'; o publish.py mostra esse trecho no publicar.md.",
+      "title_max": 100,
+      "title_visible_feed": 50,
+      "description_max": 5000,
+      "_note_description_max": "Counted in characters. The YouTube API may count 5000 BYTES (not confirmed): accented or non-Latin text hits it sooner; publish.py warns if the UTF-8 bytes go over.",
+      "description_visible": 100,
+      "_note_visible": "description_visible (and caption_visible on tiktok): characters before 'more'; publish.py shows that excerpt in publish.md.",
       "hashtags_max": 60,
-      "hashtags_acima_do_titulo": 3,
-      "_nota_hashtags_acima_do_titulo": "Vale para video normal; em Shorts nao confirmado. So entra no texto do publicar.md.",
+      "hashtags_above_title": 3,
+      "_note_hashtags_above_title": "Applies to regular videos; not confirmed for Shorts. Only used in the publish.md text.",
       "tags_total_max": 500,
-      "_nota_tags_total_max": "Soma das tags com as virgulas; tag com espaco ganha aspas (+2), como o Studio conta.",
-      "short_duracao_max_s": 180
+      "_note_tags_total_max": "Sum of the tags with the commas; a tag with a space gets quotes (+2), as Studio counts it.",
+      "short_max_duration_s": 180
     },
     "tiktok": {
-      "legenda_max": 4000,
-      "legenda_visivel": 100
+      "caption_max": 4000,
+      "caption_visible": 100
     }
   },
   "hashtags": {
-    "recomendado_min": 3,
-    "recomendado_max": 5
+    "recommended_min": 3,
+    "recommended_max": 5
   },
   "checklist": [
-    "Áudio tratado com postaudio.py (-14 LUFS), não o original",
-    "Legenda queimada conferida no celular (a interface do TikTok não cobre o texto)",
-    "Capa escolhida conforme a recomendação acima",
-    "Ouvir as emendas com fones antes de postar",
-    "Guardar a gravação original até o vídeo estar publicado"
+    "Audio processed with postaudio.py (-14 LUFS), not the original",
+    "Burned-in captions checked on a phone (the TikTok interface does not cover the text)",
+    "Cover chosen as recommended above",
+    "Listen to the splices with headphones before posting",
+    "Keep the original recording until the video is published"
   ]
 }

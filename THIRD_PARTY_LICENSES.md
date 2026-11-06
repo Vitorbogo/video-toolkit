@@ -1,11 +1,11 @@
-# Licenças de terceiros
+# Third-party licenses
 
 ## video-editing-skill — Frank Heijdenrijk
 
-O `src/vtk/engine.py` começou como uma cópia do `scripts/edit_video.py` de
-https://github.com/social-media-skills/video-editing-skill (commit `8b6fcf6`, 30/10/2026) e
-passou a ser código nosso, alterado livremente. A licença MIT pede que o aviso abaixo
-acompanhe as partes copiadas:
+`src/vtk/engine.py` started as a copy of `scripts/edit_video.py` from
+https://github.com/social-media-skills/video-editing-skill (commit `8b6fcf6`, 2026-10-30) and
+became our own code, changed freely. The MIT license requires the notice below to
+accompany the copied parts:
 
 ```
 MIT License
@@ -31,14 +31,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## ffmpeg-skill — kajisho5 (referência, nada copiado)
+## ffmpeg-skill — kajisho5 (reference, nothing copied)
 
-- Origem: https://github.com/kajisho5/ffmpeg-skill
-- Licença: MIT
-- Não há código dele neste repositório. Se algum dia for copiado, incluir aqui o aviso de
-  direitos autorais e o texto da licença original.
+- Source: https://github.com/kajisho5/ffmpeg-skill
+- License: MIT
+- None of its code is in this repository. If any is ever copied, include its copyright
+  notice and the original license text here.
 
-## Poppins — fonte das legendas e capas
+## Poppins — caption and cover font
 
-- Arquivos: `assets/fonts/Poppins-*.ttf`
-- Licença: SIL Open Font License 1.1 (`assets/fonts/OFL-Poppins.txt`)
+- Files: `assets/fonts/Poppins-*.ttf`
+- License: SIL Open Font License 1.1 (`assets/fonts/OFL-Poppins.txt`)

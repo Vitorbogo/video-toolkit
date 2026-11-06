@@ -1,4 +1,4 @@
-"""postaudio: leitura do loudnorm, cadeia do preset, conta do loudnorm linear e uma rodada real com ffmpeg.
+"""postaudio: loudnorm parsing, the preset chain, the linear loudnorm math and a real run with ffmpeg.
 
     python3 -m unittest discover tests
 """
@@ -21,21 +21,21 @@ STDERR = """[Parsed_loudnorm_3 @ 0x1] \n{
 }
 [out#0/null @ 0x2] video:0KiB audio:22080KiB
 """
-SILENCIO = STDERR.replace('"-26.49"', '"-inf"').replace('"-5.41"', '"-inf"').replace('"0.97"', '"inf"')
+SILENCE = STDERR.replace('"-26.49"', '"-inf"').replace('"-5.41"', '"-inf"').replace('"0.97"', '"inf"')
 A = preset.load("presets/tiktok-vertical.json")["audio"]
 
 
 class Parse(unittest.TestCase):
-    def test_le_json_e_converte_numeros(self):
+    def test_reads_json_and_converts_numbers(self):
         j = pa.parse_loudnorm(STDERR)
         self.assertEqual(j["input_i"], -26.49); self.assertEqual(j["input_tp"], -5.41)
         self.assertEqual(j["normalization_type"], "dynamic")
 
     def test_inf(self):
-        j = pa.parse_loudnorm(SILENCIO)
+        j = pa.parse_loudnorm(SILENCE)
         self.assertEqual(j["input_i"], float("-inf")); self.assertEqual(j["target_offset"], float("inf"))
 
-    def test_sem_json(self):
+    def test_no_json(self):
         self.assertIsNone(pa.parse_loudnorm("Stream map '0:a:0' matches no streams."))
 
 
@@ -45,59 +45,59 @@ class Measure(unittest.TestCase):
         r = R(); r.stderr = stderr; r.returncode = 1
         return lambda args: (r, pa.parse_loudnorm(stderr))
 
-    def test_silencio_da_erro_claro(self):
-        with unittest.mock.patch.object(pa, "ffmpeg_ln", self.fake(SILENCIO)):
+    def test_silence_gives_clear_error(self):
+        with unittest.mock.patch.object(pa, "ffmpeg_ln", self.fake(SILENCE)):
             with self.assertRaises(SystemExit) as c: pa.measure("x.mov", "anull", "I=-14")
-        self.assertIn("silencio", str(c.exception.code))
+        self.assertIn("silent", str(c.exception.code))
 
-    def test_sem_audio_da_erro_claro(self):
+    def test_no_audio_gives_clear_error(self):
         with unittest.mock.patch.object(pa, "ffmpeg_ln", self.fake("Stream map '0:a:0' matches no streams.")):
             with self.assertRaises(SystemExit) as c: pa.measure("x.mov", "anull", "I=-14")
-        self.assertIn("nao tem faixa de audio", str(c.exception.code))
+        self.assertIn("has no audio track", str(c.exception.code))
 
 
 class Chain(unittest.TestCase):
-    def test_preset_padrao(self):
+    def test_default_preset(self):
         c = pa.chain(A)
         self.assertTrue(c.startswith("aresample=192000,highpass=f=80,"))
         self.assertNotIn("afftdn", c); self.assertNotIn("alimiter", c)
 
-    def test_pre_limitador_sem_auto_level_e_sem_atraso(self):
+    def test_pre_limiter_without_auto_level_or_delay(self):
         c = pa.chain(A, -12.0)
         lim = re.search(r"alimiter=([^,]+)$", c).group(1)
         self.assertIn("level=0", lim); self.assertIn("latency=1", lim)
         self.assertAlmostEqual(float(re.search(r"limit=([\d.]+)", lim).group(1)), 10 ** (-12 / 20), places=5)
 
-    def test_denoise_opcional(self):
+    def test_optional_denoise(self):
         B = dict(A); B.pop("denoise")
         self.assertNotIn("afftdn", pa.chain(B))
         B["denoise"] = {"enabled": True, "nr_db": 3, "noise_floor_db": -60}
         self.assertIn("afftdn=nr=3:nf=-60", pa.chain(B))
 
-    def test_preset_invalido(self):
+    def test_invalid_preset(self):
         for k in ("loudnorm", "compressor"):
             B = dict(A); B.pop(k)
             with self.assertRaises(SystemExit): pa.check_preset(B)
         with self.assertRaises(SystemExit): pa.check_preset(dict(A, pre_limiter=2))
         with self.assertRaises(SystemExit): pa.check_preset(dict(A, tp_margin_db=-1))
         with contextlib.redirect_stdout(io.StringIO()):
-            pa.check_preset(dict(A, pre_limiter=1.0, limiter=0.84))  # preset antigo continua valendo
+            pa.check_preset(dict(A, pre_limiter=1.0, limiter=0.84))  # old preset still works
 
 
 class Linear(unittest.TestCase):
-    def test_excesso(self):
-        # -26.49 LUFS, pico -5.41: ganho 12.49 -> pico 7.08, 9.58 dB acima de -2.5
+    def test_excess(self):
+        # -26.49 LUFS, peak -5.41: gain 12.49 -> peak 7.08, 9.58 dB above -2.5
         self.assertAlmostEqual(pa.excess({"input_i": -26.49, "input_tp": -5.41}, -14, -2.5), 9.58, places=2)
         self.assertLessEqual(pa.excess({"input_i": -27.42, "input_tp": -16.8}, -14, -2.5), 0)
 
-    def test_proximo_pre_limite_torna_linear_possivel(self):
+    def test_next_pre_limit_makes_linear_possible(self):
         m = {"input_i": -26.49, "input_tp": -5.41}
         pre = pa.next_pre_db(m, -14, -2.5, None)
         self.assertAlmostEqual(pre, -5.41 - 9.58 - pa.STEP_DB, places=2)
-        # se o volume nao mudasse, o novo pico + ganho ficaria abaixo do plano pela folga
+        # if the loudness didn't change, the new peak + gain would sit below the plan by the headroom
         self.assertAlmostEqual(pa.excess({"input_i": -26.49, "input_tp": pre}, -14, -2.5), -pa.STEP_DB, places=6)
 
-    def test_proximo_pre_limite_parte_do_limite_atual(self):
+    def test_next_pre_limit_starts_from_the_current_limit(self):
         m = {"input_i": -27.3, "input_tp": -15.0}
         self.assertAlmostEqual(pa.next_pre_db(m, -14, -2.5, -16.0), -16.0 - pa.excess(m, -14, -2.5) - pa.STEP_DB)
 
@@ -105,16 +105,16 @@ class Linear(unittest.TestCase):
 FF = shutil.which("ffmpeg")
 
 
-@unittest.skipUnless(FF, "ffmpeg nao instalado")
-class Integracao(unittest.TestCase):
-    def test_final_mov_vira_mp4_no_alvo(self):
+@unittest.skipUnless(FF, "ffmpeg not installed")
+class Integration(unittest.TestCase):
+    def test_final_mov_becomes_mp4_on_target(self):
         with tempfile.TemporaryDirectory() as d:
             inp, out = os.path.join(d, "final.mov"), os.path.join(d, "final.mp4")
-            # "voz" modulada a -26 dB + plosivas curtas perto de 0 dBFS (forcam o pre-limitador), 44.1 kHz mono
-            voz = ("0.08*sin(2*PI*180*t)*(0.6+0.4*sin(2*PI*4*t))"
+            # modulated "voice" at -26 dB + short plosives near 0 dBFS (force the pre-limiter), 44.1 kHz mono
+            voice = ("0.08*sin(2*PI*180*t)*(0.6+0.4*sin(2*PI*4*t))"
                    "+0.9*exp(-mod(t,1.3)*120)*sin(2*PI*110*t)*lt(mod(t,1.3),0.05)")
             subprocess.run([FF, "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=320x240:r=30:d=6",
-                            "-f", "lavfi", "-i", "aevalsrc=%s:s=44100:d=6" % voz.replace(",", "\\,"), "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                            "-f", "lavfi", "-i", "aevalsrc=%s:s=44100:d=6" % voice.replace(",", "\\,"), "-c:v", "libx264", "-pix_fmt", "yuv420p",
                             "-c:a", "pcm_s16le", inp], check=True)
             with contextlib.redirect_stdout(io.StringIO()):
                 r = pa.run(inp, out, A)
@@ -125,7 +125,7 @@ class Integracao(unittest.TestCase):
             md5 = lambda p: subprocess.run([FF, "-v", "error", "-i", p, "-map", "0:v", "-c", "copy", "-f", "md5", "-"],
                                            capture_output=True, text=True, check=True).stdout
             self.assertEqual(md5(inp), md5(out))
-            self.assertEqual(sorted(os.listdir(d)), ["final.mov", "final.mp4"])  # sem .tmp sobrando
+            self.assertEqual(sorted(os.listdir(d)), ["final.mov", "final.mp4"])  # no leftover .tmp
 
 
 if __name__ == "__main__":

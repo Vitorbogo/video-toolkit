@@ -1,6 +1,16 @@
 {
   "name": "fillers-pt",
-  "_nota": "Enchimentos em portugues para o src/vtk/engine.py. O src/vtk/cuts.py aplica esta lista sempre (sem ela o engine usa a lista em ingles, que inclui 'um' e corta o artigo). 'fillers' = hesitacao pura, cortada sempre (nunca por aqui 'é', 'um', 'ah', 'hã' nem 'uhum'/'aham'). 'extra_fillers' = muleta, cortada so ao lado de virgula (antes OU depois): por isso 'sabe', 'enfim' e 'tipo assim' ficaram de fora ('não sabe, mas'), e ', então' de conclusao ('Se chover, então') tambem sai: conferir no edit-plan.md. O engine nao detecta retomadas em portugues ('deixa eu falar de novo') nem 'Então...' com reticencias: marcar em 'cut' na revisao. Teste: tests/test_fillers_pt.py.",
+  "_note": "Portuguese preset for src/vtk/cuts.py (language 'pt', see src/vtk/lang.py). Without it the engine (src/vtk/engine.py) uses its English list, which includes 'um' and would cut the Portuguese article. 'fillers' = pure hesitation, always cut (never here: 'é' (is), 'um' (a), 'ah', 'hã' (huh?) nor 'uhum'/'aham' (yes)). 'extra_fillers' = crutch words, cut only next to a comma (before OR after): that is why 'sabe' (you know), 'enfim' (anyway) and 'tipo assim' (like) were left out ('não sabe, mas' = 'doesn't know, but'), and a concluding ', então' ('Se chover, então' = 'If it rains, then') is cut too: check edit-plan.md. The engine does not detect Portuguese retakes ('deixa eu falar de novo') nor 'Então...' with an ellipsis: mark them in 'cut' during review. 'short_words' = a caption line should not end on them; 'break_before' = breaking a caption line before them reads naturally; 'function_words' = language detection. Test: tests/test_fillers.py.",
   "fillers": ["eh", "ehh", "ehhh", "éh", "éé", "ééé", "hum", "humm", "hmm", "mm", "ãh", "ãã", "ahn", "uh", "uhm", "umm"],
-  "extra_fillers": ["né", "tipo", "então"]
+  "extra_fillers": ["né", "tipo", "então"],
+  "short_words": ["a", "o", "as", "os", "um", "uma", "de", "do", "da", "dos", "das", "em", "no", "na", "nos", "nas", "e",
+                  "que", "com", "para", "pra", "por", "pelo", "pela", "ao", "à", "se", "eu", "me", "te", "seu", "sua"],
+  "break_before": ["e", "mas", "porque", "pois", "quando", "ou", "então", "onde"],
+  "function_words": ["de", "que", "não", "a", "o", "os", "as", "uma", "umas", "uns", "para", "pra", "com", "em", "no", "na",
+                     "nos", "nas", "do", "da", "dos", "das", "é", "e", "eu", "você", "vocês", "ele", "ela", "eles",
+                     "elas", "isso", "isto", "esse", "essa", "este", "esta", "aquilo", "mais", "mas", "se", "por",
+                     "pelo", "pela", "ao", "à", "aos", "também", "muito", "muita", "já", "está", "estou", "tem",
+                     "tenho", "vai", "vou", "como", "quando", "porque", "então", "aqui", "ou", "seu", "sua", "meu",
+                     "minha", "nós", "foi", "ser", "ter", "só", "ainda", "sobre", "até", "depois", "bem", "agora",
+                     "assim", "onde", "qual", "quem", "né", "lá", "sem", "entre", "nosso", "nossa", "me"]
 }

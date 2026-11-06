@@ -1,8 +1,8 @@
-"""transcribe_words: silencios, janelas, emenda de janelas, fim das palavras e saida, sem o modelo.
+"""transcribe_words: silences, windows, joining windows, word ends and output, without the model.
 
     python3 -m unittest discover tests
-O teste de integracao roda o Parakeet de verdade so se houver modelo (models/... ou VTK_MODEL_DIR), sherpa-onnx,
-ffmpeg e o `say` do macOS; senao e pulado.
+The integration test runs the real Parakeet only if there is a model (models/... or VTK_MODEL_DIR), sherpa-onnx,
+ffmpeg and macOS `say`; otherwise it is skipped.
 """
 import json, os, re, shutil, subprocess, sys, tempfile, unittest, wave
 import numpy as np
@@ -16,7 +16,7 @@ SCRIPT = os.path.join(ROOT, "src", "vtk", "transcribe_words.py")
 
 
 def sig(*parts):
-    """('s', 1.0) = silencio, ('v', 2.0) = 'voz' (seno a -10 dBFS), ('n', 1.0) = ruido fraco (-45 dBFS)."""
+    """('s', 1.0) = silence, ('v', 2.0) = 'voice' (sine at -10 dBFS), ('n', 1.0) = weak noise (-45 dBFS)."""
     rng = np.random.default_rng(0); out = []
     for kind, d in parts:
         n = int(d * SR); t = np.arange(n) / SR
@@ -49,7 +49,7 @@ class Silences(unittest.TestCase):
         self.assertRuns(runs_of(sig(("v", 3))), [[0, 3]])
 
     def test_short_pause_and_weak_noise(self):
-        # pausa de 0,3 s nao separa; ruido a -45 dB conta como silencio
+        # a 0.3 s pause doesn't split; noise at -45 dB counts as silence
         self.assertRuns(runs_of(sig(("v", 1), ("s", 0.3), ("v", 1), ("n", 1), ("v", 1))), [[0, 2.3], [3.3, 4.3]])
 
     def test_all_silence(self):
@@ -69,7 +69,7 @@ class Windows(unittest.TestCase):
         self.assertAlmostEqual(w[1][1], 40.1, delta=0.03)
 
     def test_split_never_at_fixed_time(self):
-        # sem ponto quieto: ainda cai entre 15 e 25 s; com um vale a 17,3 s, cai nele (e nao em 25 s)
+        # no quiet point: still falls between 15 and 25 s; with a dip at 17.3 s, it falls there (not at 25 s)
         x = sig(("v", 17.3), ("n", 0.08), ("v", 30)); w = T.windows(runs_of(x), T.frame_db(x))
         self.assertAlmostEqual(w[0][1], 17.34, delta=0.03)
         self.assertTrue(all(e - s <= 25.0 for s, e in w))
@@ -80,18 +80,18 @@ class Windows(unittest.TestCase):
         self.assertEqual(T.windows(runs, np.zeros(0)), [[0, 24], [26, 30]])
 
     def test_quiet_point(self):
-        db = np.full(1000, -10.0); db[600:604] = -80     # quadros de 20 ms: 12,00-12,08 s
+        db = np.full(1000, -10.0); db[600:604] = -80     # 20 ms frames: 12.00-12.08 s
         self.assertAlmostEqual(T.quiet_point(db, 10, 15), 12.04, delta=0.001)
 
 
 class Join(unittest.TestCase):
     def test_duplicate_at_join(self):
-        # erro real: "bem."@24.72 e "Bem"@25.12 na emenda de 25 s
+        # real bug: "bem."@24.72 and "Bem"@25.12 at the 25 s join
         prev = W(("muito", 24.2, 24.6), ("bem.", 24.72, 24.88)); new = W(("Bem", 25.12, 25.28), ("feito", 25.3, 25.7))
         self.assertEqual([w["w"] for w in T.join(prev, new, 24.8, 25.2)], ["muito", "bem.", "feito"])
 
     def test_keeps_the_version_away_from_the_edge(self):
-        # "cor" veio cortado no fim da janela anterior; "cortar" inteiro na seguinte
+        # "cor" came clipped at the end of the previous window; "cortar" whole in the next
         prev = W(("vou", 24.4, 24.7), ("cor", 24.9, 25.2)); new = W(("cortar", 24.85, 25.3), ("isso", 25.3, 25.6))
         self.assertEqual([w["w"] for w in T.join(prev, new, 24.8, 25.2)], ["vou", "cortar", "isso"])
 
@@ -121,13 +121,13 @@ class WordTimes(unittest.TestCase):
     def test_end_from_duration_and_punctuation_does_not_move_it(self):
         ws = T.words_of(self.TOK, self.TS, self.DUR)
         self.assertEqual([w["w"] for w in ws], ["Essa", "é", "uma", "coisa.", "E"])
-        self.assertEqual(ws[3], {"w": "coisa.", "start": 7.92, "end": 8.56})    # 8.24 + 0.32, nao 8.56 + 0.16
+        self.assertEqual(ws[3], {"w": "coisa.", "start": 7.92, "end": 8.56})    # 8.24 + 0.32, not 8.56 + 0.16
         self.assertEqual(ws[0]["end"], 7.44)
 
     def test_fallback_without_durations(self):
         for d in (None, []):
             ws = T.words_of(self.TOK, self.TS, d)
-            self.assertEqual(ws[3]["end"], 8.4)                                  # ultimo token 8.24 + 0.16
+            self.assertEqual(ws[3]["end"], 8.4)                                  # last token 8.24 + 0.16
 
     def test_offset_zero_duration_and_leading_punct(self):
         ws = T.words_of([".", " Oi", ",", " tu", "do"], [0.0, 0.1, 0.3, 0.4, 0.5], [0.08, 0.16, 0.08, 0.08, 0.0], offset=20)
@@ -135,15 +135,15 @@ class WordTimes(unittest.TestCase):
 
     def test_finish_snaps_to_silence(self):
         runs = [[0.0, 1.4], [2.8, 5.46], [7.16, 8.3]]
-        ws = T.finish(W(("Bom", 0.0, 0.3), ("pessoal.", 0.9, 1.6),                 # passa do silencio: volta
-                        ("de", 4.8, 5.0), ("vídeo.", 5.1, 5.2),                    # termina cedo: vai ate o silencio
+        ws = T.finish(W(("Bom", 0.0, 0.3), ("pessoal.", 0.9, 1.6),                 # goes past the silence: comes back
+                        ("de", 4.8, 5.0), ("vídeo.", 5.1, 5.2),                    # ends early: extends to the silence
                         ("coisa.", 7.9, 8.56), ("Oi", 11.0, 11.2)), 12.0, runs)
         self.assertEqual([w["end"] for w in ws], [0.3, 1.4, 5.0, 5.46, 8.3, 11.2])
 
     def test_finish_caps(self):
         ws = T.finish(W(("a", 1.0, 1.5), ("b", 1.3, 1.4), ("c", 2.0, 2.9)), 2.5, [[0.9, 2.45]])
         self.assertEqual([w["end"] for w in ws], [1.3, 1.4, 2.45])
-        far = T.finish(W(("a", 1.0, 1.2)), 5.0, [[0.9, 3.0]])                     # mais de 0,5 s: nao estica
+        far = T.finish(W(("a", 1.0, 1.2)), 5.0, [[0.9, 3.0]])                     # more than 0.5 s: doesn't stretch
         self.assertEqual(far[0]["end"], 1.2)
 
 
@@ -159,7 +159,17 @@ class Output(unittest.TestCase):
         self.assertEqual(j["sentences"], [{"start": 0.1, "end": 0.9, "text": "Olá, ação."},
                                           {"start": 2.5, "end": 2.8, "text": "Fim"}])
         self.assertEqual(j["duration"], 3.0)
+        self.assertIsNone(j["lang"])  # three words: too little to tell the language
         self.assertEqual(txt, "[00:00.1-00:00.9] Olá, ação.\n[00:02.5-00:02.8] Fim\n")
+
+    def test_transcript_language(self):
+        for text, code in (("Hoje eu quero mostrar para vocês como isso é feito.", "pt"),
+                           ("Today I want to show you how this is done.", "en")):
+            ws = [{"w": w, "start": i * 0.4, "end": i * 0.4 + 0.3} for i, w in enumerate(text.split())]
+            with tempfile.TemporaryDirectory() as d:
+                _, lang = T.write(d, "x.wav", 6.0, ws)
+                with open(os.path.join(d, "transcript.json"), encoding="utf-8") as f: j = json.load(f)
+            self.assertEqual((lang, j["lang"]), (code, code))
 
     def test_read_wav_without_ffmpeg(self):
         x = (sig(("v", 0.5)) * 32767).astype(np.int16)
@@ -202,7 +212,7 @@ def _have_sherpa():
 
 
 @unittest.skipUnless(_model_dir() and _have_sherpa() and shutil.which("say") and shutil.which("ffmpeg"),
-                     "precisa do modelo (models/ ou VTK_MODEL_DIR), sherpa-onnx, ffmpeg e say")
+                     "needs the model (models/ or VTK_MODEL_DIR), sherpa-onnx, ffmpeg and say")
 class RealModel(unittest.TestCase):
     PAUSES = ("Bom dia, pessoal. [[slnc 1200]] Hoje vamos falar de edição de vídeo. [[slnc 1500]] Essa é uma coisa. "
               "[[slnc 1000]] E essa é outra coisa importante. [[slnc 1300]] Então é isso, até a próxima.")
@@ -212,10 +222,10 @@ class RealModel(unittest.TestCase):
             "roda aqui mesmo e que marca o tempo de cada palavra com isso eu consigo cortar os enchimentos as "
             "repetições e as pausas longas de um jeito bem preciso e no final eu gero as legendas a capa e o texto")
 
-    def run_on(self, text):
+    def run_on(self, text, voice="Luciana"):
         d = self.enterContext(tempfile.TemporaryDirectory())
-        aiff = os.path.join(d, "fala.aiff")
-        subprocess.run(["say", "-v", "Luciana", "-r", "175", "-o", aiff, text], check=True)
+        aiff = os.path.join(d, "speech.aiff")
+        subprocess.run(["say", "-v", voice, "-r", "175", "-o", aiff, text], check=True)
         r = subprocess.run([sys.executable, SCRIPT, "--audio", aiff, "--out", d, "--model-dir", _model_dir()],
                            capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stderr)
@@ -230,6 +240,7 @@ class RealModel(unittest.TestCase):
 
     def test_sentence_ends_at_silence(self):
         j, starts = self.run_on(self.PAUSES)
+        self.assertEqual(j["lang"], "pt")
         ends = [w["end"] for w in j["words"] if w["w"][-1] in ".?!"]
         self.assertEqual(len(ends), 5, [w["w"] for w in j["words"]])
         for e, s in zip(ends, starts): self.assertAlmostEqual(e, s, delta=0.1)
@@ -238,10 +249,17 @@ class RealModel(unittest.TestCase):
     def test_long_take_without_pauses(self):
         j, starts = self.run_on(self.LONG)
         self.assertGreater(j["duration"], 26)
-        self.assertFalse([s for s in starts if s < j["duration"] - 1])               # sem pausa: precisa dividir
+        self.assertFalse([s for s in starts if s < j["duration"] - 1])               # no pause: has to split
         self.assertGreaterEqual(len(j["words"]), 95)
         self.assertNoAdjacentRepeats(j["words"])
         self.assertTrue(all(a["start"] <= b["start"] for a, b in zip(j["words"], j["words"][1:])))
+
+    def test_english_speech(self):
+        if "Samantha" not in subprocess.run(["say", "-v", "?"], capture_output=True, text=True).stdout:
+            self.skipTest("needs the macOS Samantha voice")
+        j, _ = self.run_on("Good morning, everyone. Today I want to show you how I edit my short videos with free "
+                           "tools that run on my own computer, and why it is easier than it looks.", "Samantha")
+        self.assertEqual(j["lang"], "en", [w["w"] for w in j["words"]])
 
 
 if __name__ == "__main__":
