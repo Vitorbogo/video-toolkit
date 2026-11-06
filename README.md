@@ -18,6 +18,9 @@ Tudo roda local, só com ffmpeg e Python. O contexto de cada autor (pastas, púb
 | `videos/<nome>/` | **Tudo de cada vídeo**: transcrição, `edit.json`, `plan.json`, `preset.json`, clipes (`render/`), vídeo final, capas (`capas/`), `meta.json`, `publicar.md`. **Fora do git** (o repo é público e o conteúdo não pode vazar antes de o vídeo sair). |
 
 Requisitos: `ffmpeg` (com `ffprobe`), Python 3 com `Pillow`, `numpy`, `sherpa-onnx` e `mediapipe` (só para o `rosto.py`).
+Os pacotes Python ficam num ambiente do próprio projeto, `.venv/` (fora do git):
+`python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`. Nos comandos abaixo, `python3` é o desse ambiente:
+rode `source .venv/bin/activate` antes, ou troque `python3` por `.venv/bin/python`.
 
 ## Fluxo
 
@@ -79,7 +82,7 @@ Imagem da câmera: `--camera-filter off|natural` no `render.py` (padrão do pres
 
 - [x] Layout 9:16 (rosto, slide, legenda) a partir de preset; preset por vídeo herda do base (`"base"`)
 - [x] Áudio determinístico em 2 passadas, -14 LUFS (1º vídeo, cadeia antiga: -14,05 LUFS, -1,36 dBTP)
-- [ ] Cadeia de áudio nova como padrão: sem redução de ruído (o `afftdn` deixava a voz robótica), compressor 2:1, pré-limitador automático (loudnorm sempre linear) e folga de pico para o AAC. Medido em voz sintética com plosivas: -14,1 LUFS, -2,2 dBTP, linear. Falta medir num vídeo real
+- [x] Cadeia de áudio nova como padrão: sem redução de ruído (o `afftdn` deixava a voz robótica), compressor 2:1, pré-limitador automático (loudnorm sempre linear) e folga de pico para o AAC. Medido em voz sintética com plosivas: -14,1 LUFS, -2,2 dBTP, linear. Aceito sem medição em vídeo real (06/11/2026)
 - [x] Tratamento leve de imagem da câmera (opcional)
 - [x] Capas 9:16 e 16:9 determinísticas (`thumb.py`), com quadro e textos próprios por formato; texto encolhe para caber
 - [x] Capa com expressão neutra: `rosto.py` dá nota a cada quadro (MediaPipe, local) contra o rosto em repouso do próprio vídeo; `thumb.json` usa `"auto"`
@@ -90,11 +93,11 @@ Imagem da câmera: `--camera-filter off|natural` no `render.py` (padrão do pres
 - [x] Pausas curtas em vez de apagadas (o engine encurta para uma respiração)
 - [x] Emendas sem atraso de áudio: clipes com áudio PCM e duração exata em quadros, juntados pelo próprio `render.py`
 - [x] Borrar uma região por um intervalo (`blur` no `edit.json`), para esconder dados na tela
-- [ ] Zoom leve só na câmera, **opcional** (`cuts.py --zoom` sugere, `zoom` no `edit.json` decide; `render.py` aplica). Falta rodar num vídeo real
+- [x] Zoom leve só na câmera, **opcional** (`cuts.py --zoom` sugere, `zoom` no `edit.json` decide; `render.py` aplica). Aceito sem rodar num vídeo real (06/11/2026)
 - [ ] Imagem de verificação das emendas (dá para usar a `cut_sheet` do `engine.py` sobre o nosso final)
 - [x] Legenda desenhada com Pillow (o ffmpeg do Homebrew não tem libass): frase inteira, palavra falada em laranja (estilo escolhido em 05/11/2026)
-- [ ] Efeitos sonoros gerados (`sfx/`), lista por vídeo (`sfx.json`), mistura no `postaudio.py --sfx`. Testado em trechos; falta um vídeo completo
-- [ ] Ilustrações com HyperFrames (skill `ilustracoes`). Testado no "teste ilustração" (05/11/2026); falta ligar ao `render.py`
+- [x] Efeitos sonoros gerados (`sfx/`), lista por vídeo (`sfx.json`), mistura no `postaudio.py --sfx`. Testado em trechos; aceito sem vídeo completo (06/11/2026)
+- [ ] Ilustrações com HyperFrames (skill `ilustracoes`). Testado no "teste ilustração" (05/11/2026); já entra pelo `render.py --painel`. Falta usar num vídeo completo
 - [x] Transcrição com tempo por palavra, grátis e local (`transcribe_words.py`, Parakeet TDT v3; erra termos como "IA" → "Ya", revisar o texto). Janelas longas divididas no ponto mais quieto, sem palavra duplicada; fim da palavra alinhado ao silêncio
 - [x] Modelo guardado em `models/` (ignorado pelo git)
 
@@ -102,11 +105,11 @@ Imagem da câmera: `--camera-filter off|natural` no `render.py` (padrão do pres
 
 `models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8/` (487 MB, não vai para o git). Para baixar de novo: release `asr-models` de
 `github.com/k2-fsa/sherpa-onnx`, arquivo `sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2`, e extrair em `models/`.
-Requer `pip install sherpa-onnx numpy`. Não usa chave de API nem envia áudio para fora.
+Requer `sherpa-onnx` e `numpy` (no `.venv/`, pelo `requirements.txt`). Não usa chave de API nem envia áudio para fora.
 
 Rosto (para o `rosto.py`): `models/face_landmarker.task` (3,7 MB, Apache 2.0, não vai para o git), de
 `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task`.
-Requer `pip install mediapipe`. Roda local; o vídeo não sai da máquina.
+Requer `mediapipe` (no `.venv/`, pelo `requirements.txt`). Roda local; o vídeo não sai da máquina.
 
 ## Licenças
 

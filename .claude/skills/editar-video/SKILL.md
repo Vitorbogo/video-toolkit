@@ -11,7 +11,7 @@ O autor não roda nada: você roda tudo e para nos **pontos de revisão** (marca
 
 ## Passos
 
-1. **Ambiente.** Confira `ffmpeg -version`, `ffprobe -version` e `python3 -c "import PIL, numpy, sherpa_onnx, mediapipe"`, e os modelos `models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8/` e `models/face_landmarker.task` (como baixar: README, "Modelo de transcrição"). O que faltar, instale (`pip install ...`; no Mac, `brew install ffmpeg`) e avise o que instalou. **Pronto quando** os quatro comandos rodam sem erro.
+1. **Ambiente.** Os pacotes Python ficam em `.venv/` no projeto, não no Python do sistema: em todo comando deste fluxo e das outras skills, use `.venv/bin/python` no lugar de `python3` (cada chamada do shell começa sem o ambiente ativado). Confira `ffmpeg -version`, `ffprobe -version` e `.venv/bin/python -c "import PIL, numpy, sherpa_onnx, mediapipe"`, e os modelos `models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8/` e `models/face_landmarker.task` (como baixar: README, "Modelo de transcrição"). Sem `.venv/`: `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt` (no Mac, ffmpeg com `brew install ffmpeg`) e avise o que instalou. **Pronto quando** os quatro comandos rodam sem erro.
 
 2. **Preset do vídeo.** Extraia quadros da gravação (ex.: 5 s, 30 s, meio, fim) e olhe cada um. Meça a janela da câmera e o painel do slide/tela (`largura, altura, x, y` em pixels da gravação) e a resolução. Escreva `videos/<nome>/preset.json` só com o que muda:
    `{"base": "presets/tiktok-vertical.json", "source": {"w": .., "h": .., "camera_crop": [..], "slide_crop": [..]}}`.

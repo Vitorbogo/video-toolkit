@@ -53,3 +53,6 @@ CLAUDE.local.md
 
 # conteúdo de cada vídeo (transcrição, cortes, metadados, capas, render) fica local: o repo é público
 videos/
+
+# ambiente Python local do projeto (sherpa-onnx, numpy, Pillow, mediapipe)
+.venv/
