@@ -27,6 +27,8 @@ CATALOG = {
     "click":        {"hit": 0.0,  "vol": 0.35, "use": "on-screen action: click, button, sending a prompt"},
 }
 
+OLD_SOUNDS = {"whoosh-curto": "whoosh-short", "pop-bolha": "pop-bubble", "pop-madeira": "pop-wood", "clique": "click"}
+
 
 # ---------- synthesis (numpy only here, so the rest of the module doesn't depend on it) ----------
 
@@ -91,7 +93,11 @@ def check(cues, duration=None):
     """List of problems (empty = ok): unknown sound, outside the video, effects too close together."""
     errors = []
     for i, c in enumerate(cues):
-        if c.get("sound") not in CATALOG:
+        if "som" in c:
+            errors.append(f"#{i}: old Portuguese key 'som': rename it to 'sound'")
+        elif c.get("sound") in OLD_SOUNDS:
+            errors.append(f"#{i}: sound '{c['sound']}' was renamed to '{OLD_SOUNDS[c['sound']]}'")
+        elif c.get("sound") not in CATALOG:
             errors.append(f"#{i}: sound '{c.get('sound')}' does not exist (options: {', '.join(CATALOG)})")
         if not isinstance(c.get("t"), (int, float)) or c["t"] < 0 or (duration and c["t"] > duration):
             errors.append(f"#{i}: t={c.get('t')} outside the video")

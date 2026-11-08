@@ -44,6 +44,7 @@ transcript.json
 transcript.txt
 !/vendor/**/transcript.*
 *.bak
+*.pt-bak
 
 .DS_Store
 __pycache__/

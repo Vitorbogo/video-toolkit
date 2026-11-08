@@ -45,12 +45,14 @@ class Detect(unittest.TestCase):
             self.assertIsNone(lang.detect(t), t)
 
     def test_words_shared_by_both_languages_dont_count(self):
-        # "a", "no", "do", "as", "me" are function words in both
-        self.assertIsNone(lang.detect("a no do as me a no do as me a no do as me"))
+        # "no", "do", "as", "me" are function words in both
+        self.assertIsNone(lang.detect("no do as me no do as me no do as me"))
 
     def test_portuguese_heavy_on_the_article_a(self):
         # "a" is the most common Portuguese word; it must not tip PT speech towards English
-        self.assertNotEqual(lang.detect("A IA vai ajudar a equipe a fazer a tarefa toda."), "en")
+        self.assertIn("a", lang.load("pt")["function_words"])
+        self.assertNotIn("a", lang.load("en")["function_words"])
+        self.assertEqual(lang.detect("A IA vai ajudar a equipe a fazer a tarefa toda."), "pt")
         for t in ("Então, a primeira coisa que você precisa entender é que a IA não sabe a resposta. Ela calcula a "
                   "palavra mais provável, e a chance de acertar sobe muito quando a pergunta traz o contexto todo.",
                   "Quando eu comecei a usar a IA no trabalho, a primeira coisa que eu percebi foi que a resposta mudava."):
@@ -62,6 +64,16 @@ class Detect(unittest.TestCase):
     def test_english_terms_in_portuguese_speech(self):
         self.assertEqual(lang.detect("Eu abro o ChatGPT, colo o prompt e peço um resumo do contract review que "
                                      "fiz para o meu cliente, porque isso é o que mais tempo leva."), "pt")
+
+    def test_english_with_the_article_a(self):
+        # "a" counts for Portuguese only, but in real English speech the other function words outweigh it
+        self.assertEqual(lang.detect("So I have a quick tip for you: when you write a prompt, give the model the context "
+                                     "it needs, and it will give you a much better answer."), "en")
+
+    def test_curly_apostrophe_matches_engine(self):
+        from vtk import engine
+        self.assertEqual(engine.clean("Don’t,"), lang.clean("Don’t,"))
+        self.assertEqual(engine.clean("Don’t,"), "don't")
 
     def test_english_filler_um_does_not_count_as_portuguese(self):
         self.assertEqual(lang.detect("Um, so, um, the thing is, uh, I think it works and um, that is it."), "en")

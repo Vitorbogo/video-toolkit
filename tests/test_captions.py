@@ -42,7 +42,7 @@ class FromCuts(unittest.TestCase):
     def test_cuts_writes_wt_parallel_to_ev(self):
         ws = [{"w": w, "start": s, "end": e} for w, s, e in
               [("Primeira", 0.0, 0.5), ("frase.", 0.6, 1.2), ("Segunda", 1.4, 1.9), ("frase.", 2.0, 2.5)]]
-        plan, _, _ = cuts.decide(ws, {}, total=3.0)
+        plan, _, _ = cuts.decide(ws, {}, total=3.0, lang="pt")
         for c in plan:
             self.assertEqual([len(t.split()) for _, _, t in c["ev"]], [len(x) for x in c["wt"]])
 

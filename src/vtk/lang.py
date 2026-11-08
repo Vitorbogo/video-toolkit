@@ -45,12 +45,20 @@ def load(code):
             "function_words": frozenset(lower("function_words"))}
 
 
+def clean(word):
+    """Lowercase word without punctuation, curly apostrophe as straight. Same as engine.clean."""
+    return re.sub(r"[^\w']", "", word.lower().replace("’", "'"))
+
+
 def tokens(text):
-    return [t for t in (re.sub(r"[^\w']", "", w.lower().replace("’", "'")) for w in text.split()) if t]
+    """Cleaned words of text (str, or the transcript's word list)."""
+    if not isinstance(text, str):
+        text = " ".join(w["w"] for w in text)
+    return [t for t in map(clean, text.split()) if t]
 
 
 def scores(text):
-    """{lang: number of words in text that are function words of only that language}, and the word count."""
+    """{lang: number of words in text (str or word list) that are function words of only that language}, and the word count."""
     sets = {c: load(c)["function_words"] for c in supported()}
     shared = {w for c, s in sets.items() for d, t in sets.items() if c < d for w in s & t}
     toks = tokens(text)
@@ -59,8 +67,6 @@ def scores(text):
 
 def detect(text):
     """Language code of text (str, or the transcript's word list), or None when it can't tell."""
-    if not isinstance(text, str):
-        text = " ".join(w["w"] for w in text)
     sc, n = scores(text)
     ranked = sorted(sc.items(), key=lambda kv: -kv[1])
     if not ranked: return None
@@ -73,7 +79,5 @@ def detect(text):
 
 def describe(text):
     """'pt 41, en 3 function words out of 120' for messages."""
-    if not isinstance(text, str):
-        text = " ".join(w["w"] for w in text)
     sc, n = scores(text)
     return ", ".join(f"{c} {k}" for c, k in sorted(sc.items(), key=lambda kv: -kv[1])) + f" function words out of {n}"

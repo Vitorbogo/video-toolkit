@@ -13,6 +13,9 @@ WARNINGS go at the top of publish.md.
 """
 import argparse, json, os, re, shutil, subprocess, sys, unicodedata
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from vtk import lang as lng
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 FIELDS = {
@@ -24,12 +27,15 @@ FIELDS = {
     "cover": '{"variant": "A|B|C" (from thumb.json), "reason": "..."}',
 }
 OPTIONAL = ("youtube_tags", "pinned_comment", "notes", "lang")
+# keys of the Portuguese-era meta.json: no backward compatibility, but a clear error pointing to the new name
+OLD_KEYS = {"titulos": "titles", "descricao": "description", "legenda_tiktok": "tiktok_caption",
+            "hashtags_motivo": "hashtags_reason", "capa": "cover", "tags_youtube": "youtube_tags",
+            "comentario_fixado": "pinned_comment", "notas": "notes"}
 PLATFORMS = ("tiktok", "youtube")
 
 RX_HASHTAG = re.compile(r"^#\w+$")
 RX_HASH_IN_TEXT = re.compile(r"(?<![\w&/])#\w+")
 RX_EMOJI = re.compile("[\U0001F000-\U0001FAFF☀-➿⬀-⯿️‍]")
-RX_LANG = re.compile(r"^[a-z]{2}$")
 
 
 def nfc(x):
@@ -81,12 +87,16 @@ def duration(video):
         raise ValueError(f"could not read the duration of {video} (ffprobe: {r.stderr.strip()[:200] or 'no output'})")
 
 
-def validate(M, P, dur=None, thumb=None, covers=None):
+def validate(M, P, dur=None, thumb=None, covers=None, spoken=None):
     """Checks meta.json (already NFC) against the preset. Returns (errors, warnings).
-    dur: seconds or None (not checked); thumb: thumb.json or None (missing); covers: file names in covers/ or None."""
+    dur: seconds or None (not checked); thumb: thumb.json or None (missing); covers: file names in covers/ or None;
+    spoken: the video's language from transcript.json/edit.json, or None (not checked)."""
     errors, warnings = [], []
     if not isinstance(M, dict):
         return ["meta.json must be a JSON object {...}"], []
+    old = sorted(k for k in M if k in OLD_KEYS)
+    if old:
+        return [f"meta.json uses the old Portuguese key '{k}': rename it to '{OLD_KEYS[k]}'" for k in old], []
     has = lambda k: k in M and M[k] not in ("", [], {}, None)
     for k in FIELDS:
         if not has(k): errors.append(f"required field missing or empty: {k} ({FIELDS[k]})")
@@ -113,8 +123,11 @@ def validate(M, P, dur=None, thumb=None, covers=None):
         errors.append("youtube_tags must be a list of non-empty texts")
     for k in ("pinned_comment", "notes"):
         if k in M and not isinstance(M[k], str): errors.append(f"{k} must be text")
-    if "lang" in M and not (isinstance(M["lang"], str) and RX_LANG.match(M["lang"])):
-        errors.append(f"lang must be a two-letter lowercase language code, e.g. \"pt\" or \"en\" (got {M['lang']!r})")
+    if "lang" in M and M["lang"] not in lng.supported():
+        errors.append(f"lang must be one of {', '.join(lng.supported())} (got {M['lang']!r})")
+    elif "lang" in M and spoken and M["lang"] != spoken:
+        errors.append(f"lang is {M['lang']!r} but the video is spoken in {spoken!r} (transcript.json/edit.json): "
+                      "titles, description and caption must be in the spoken language")
     for k in sorted(set(M) - set(FIELDS) - set(OPTIONAL)): warnings.append(f"unknown field in meta.json (ignored): {k}")
     if errors:
         return errors, warnings
@@ -174,7 +187,7 @@ def validate(M, P, dur=None, thumb=None, covers=None):
             opts = names or 'none; add "variants" to thumb.json'
             errors.append(f"cover variant '{var}' does not exist in thumb.json (variants: {opts})")
     if covers is None:
-        errors.append("covers folder not found (run thumb.py)")
+        errors.append("covers folder not found (run thumb.py; an old capas/ folder must be regenerated as covers/)")
     else:
         for f in cover_files(var).values():
             if f not in covers: errors.append(f"cover not found: {f} (run thumb.py)")
@@ -256,9 +269,14 @@ def main(argv=None):
     dur = None
     try: dur = duration(a.video)
     except ValueError as e: errors.append(str(e))
+    spoken = None
+    for f in ("edit.json", "transcript.json"):  # same order as cuts.py
+        fp = os.path.join(vdir, f)
+        if not spoken and os.path.exists(fp):
+            spoken = (read_json(fp, f, errors) or {}).get("lang")
     if M is not None and P is not None:
         M = nfc(M)
-        e2, warnings = validate(M, P, dur, thumb, set(os.listdir(covers)) if os.path.isdir(covers) else None)
+        e2, warnings = validate(M, P, dur, thumb, set(os.listdir(covers)) if os.path.isdir(covers) else None, spoken)
         errors += e2
 
     stale = out + ".stale"

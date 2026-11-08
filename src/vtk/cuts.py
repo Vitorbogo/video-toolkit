@@ -3,14 +3,14 @@
 
 Usage:
   python3 src/vtk/cuts.py --video RECORDING.mov --name <name>
-      [--transcript T] [--edit E] [--preset P] [--lang pt|en] [--zoom [1.1]] [--no-scenes] [--force]
+      [--transcript T] [--edit E] [--preset P] [--zoom [1.1]] [--no-scenes] [--force]
 Defaults: --transcript videos/<name>/transcript.json; --edit videos/<name>/edit.json (if it exists);
 --preset videos/<name>/preset.json (if it exists) or presets/tiktok-vertical.json (canvas fps, default 30).
 Writes videos/<name>/plan.json (draft: captions with Parakeet's text, REVIEW with the author) and
 videos/<name>/edit-plan.md (every removal, rebuilt from the final pieces, with its reasons). Does not overwrite
 an existing plan.json without --force; with --force the previous one is kept in plan.json.bak.
 
-Spoken language (pt, en): --lang > "lang" in edit.json > "lang" in transcript.json > detected from the transcript
+Spoken language (pt, en): "lang" in edit.json > "lang" in transcript.json > detected from the transcript
 words (src/vtk/lang.py). It picks presets/fillers-<lang>.json: fillers, crutch words and caption line breaks.
 
 edit.json (optional; times in seconds in the original recording). The skill's keys (style, pauses, cut, keep,
@@ -208,14 +208,14 @@ def captions(ws, d, max_chars, rep, lp):
 
 
 def decide(words, edit, total, fps=30.0, db=(), floor=-60.0, blacks=(), scenes=(), max_chars=60, zoom=0,
-           warnings=None, lang="pt"):
+           warnings=None, *, lang):
     """Returns (plan, removed, possible_retakes). Times of 'removed' and 'possible_retakes' in the original recording.
     zoom > 1 turns on the skill's zoom suggestion (camera only, in render.py); 0 leaves every piece unzoomed.
     lang = spoken language (main() resolves it): its preset's 'fillers' and 'extra_fillers' are merged with edit.json's;
     the skill's other keys go straight to it. 'warnings' (list) gets what needs review."""
     warnings = [] if warnings is None else warnings
-    lp = lng.load(lang)
-    spec = {**edit, **{k: lp[k] + [x for x in edit.get(k, []) if x not in lp[k]] for k in ("fillers", "extra_fillers")}}
+    lang_preset = lng.load(lang)
+    spec = {**edit, **{k: lang_preset[k] + [x for x in edit.get(k, []) if x not in lang_preset[k]] for k in ("fillers", "extra_fillers")}}
     for it in spec.get("cut", []):
         if not any(inside(w, float(it[0]), float(it[1])) for w in words):
             warnings.append(f"cut {it[0]}-{it[1]} catches no whole word (range without words: use \"trim\")")
@@ -248,7 +248,7 @@ def decide(words, edit, total, fps=30.0, db=(), floor=-60.0, blacks=(), scenes=(
         s, e = spans[j]
         out.append((off[j] + max(0.0, w["start"] - s), off[j] + min(w["end"], e) - s, t))
     plan = [{"s": s, "e": e, "ev": [], "wt": []} for s, e in spans]
-    for t0, t1, t, starts in captions(out, off[-1], max_chars, rep, lp):
+    for t0, t1, t, starts in captions(out, off[-1], max_chars, rep, lang_preset):
         for c, o in zip(plan, off):
             d = round(c["e"] - c["s"], 6)
             a, b = round(max(0.0, t0 - o), 3), min(round(t1 - o, 3), d)
@@ -276,11 +276,11 @@ def decide(words, edit, total, fps=30.0, db=(), floor=-60.0, blacks=(), scenes=(
     return plan, removed, maybe
 
 
-def resolve_lang(flag, edit, transcript):
-    """Spoken language and why: --lang > edit.json "lang" > transcript.json "lang" > detected from the words.
+def resolve_lang(edit, transcript):
+    """Spoken language and why: edit.json "lang" > transcript.json "lang" > detected from the words.
     Exits with a clear error when it is unsupported or can't be told."""
-    fix = "Set \"lang\" in videos/<name>/edit.json (or pass --lang) to one of: " + ", ".join(lng.supported()) + "."
-    for code, why in ((flag, "--lang"), (edit.get("lang"), "edit.json"), (transcript.get("lang"), "transcript.json")):
+    fix = "Set \"lang\" in videos/<name>/edit.json to one of: " + ", ".join(lng.supported()) + "."
+    for code, why in ((edit.get("lang"), "edit.json"), (transcript.get("lang"), "transcript.json")):
         if code:
             if code not in lng.supported():
                 sys.exit(f"cuts: language '{code}' (from {why}) is not supported: no presets/fillers-{code}.json. {fix}")
@@ -344,7 +344,6 @@ def main():
     ap.add_argument("--transcript", help="default: videos/<name>/transcript.json")
     ap.add_argument("--edit", help="default: videos/<name>/edit.json, if it exists")
     ap.add_argument("--preset", help="default: videos/<name>/preset.json, if it exists, or presets/tiktok-vertical.json")
-    ap.add_argument("--lang", help="spoken language (pt, en); default: edit.json, then transcript.json, then detected")
     ap.add_argument("--zoom", type=float, nargs="?", const=1.1, default=0,
                     help="suggest camera zoom at the cuts (off by default; no value = 1.1, max 1.2)")
     ap.add_argument("--no-scenes", action="store_true", help="ignore slide changes when placing cuts")
@@ -360,7 +359,7 @@ def main():
     fps = float(P.get("canvas", {}).get("fps", 30))
     transcript = read_json(a.transcript or os.path.join(vdir, "transcript.json"))
     words = transcript["words"]
-    lang, why = resolve_lang(a.lang, edit, transcript)
+    lang, why = resolve_lang(edit, transcript)
     print(f"language: {lang} ({why})", flush=True)
     ev.check_tools()
     _, _, total, _ = ev.probe(a.video)

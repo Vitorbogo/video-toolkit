@@ -42,13 +42,13 @@ class ZoomCrop(unittest.TestCase):
 
 class ZoomInPlan(unittest.TestCase):
     def test_off_by_default(self):
-        plan, _, _ = cuts.decide(WS, {}, total=10.0)
+        plan, _, _ = cuts.decide(WS, {}, total=10.0, lang="pt")
         invariants(self, plan)
         self.assertGreater(len(plan), 1)
         self.assertFalse(any("z" in c for c in plan))
 
     def test_zoom_alternates_at_large_cuts(self):
-        plan, removed, maybe = cuts.decide(WS, {}, total=10.0, zoom=1.1)
+        plan, removed, maybe = cuts.decide(WS, {}, total=10.0, zoom=1.1, lang="pt")
         invariants(self, plan)
         self.assertEqual([c.get("z", 1) for c in plan], [1, 1.1, 1])
         self.assertIn("Camera zoom", cuts.report(plan, removed, maybe, 10.0))
