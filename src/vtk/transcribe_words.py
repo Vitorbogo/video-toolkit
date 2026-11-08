@@ -41,7 +41,7 @@ def decode(path):
         except (wave.Error, EOFError):
             pass
     if not shutil.which("ffmpeg"):
-        sys.exit(f"ERROR: {path} needs ffmpeg to become mono 16 kHz (brew install ffmpeg), "
+        sys.exit(f"ERROR: {path} needs ffmpeg to become mono 16 kHz (Mac: brew install ffmpeg; Linux: sudo apt install ffmpeg), "
                  "or pass a 16-bit mono 16 kHz WAV (ffmpeg -i X -vn -ac 1 -ar 16000 audio.wav).")
     p = subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-i", path, "-vn", "-ac", "1", "-ar", str(SR),
                         "-f", "s16le", "-"], capture_output=True)

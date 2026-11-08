@@ -20,11 +20,31 @@ author's context (folders, audience, content decisions) lives in a `CLAUDE.local
 | `videos/<name>/` | **Everything for each video**: transcript, `edit.json`, `plan.json`, `preset.json`, clips (`render/`), final video, covers (`covers/`), `meta.json`, `publish.md`. **Outside git** (the repo is public and the content must not leak before the video is out). |
 
 Requirements: `ffmpeg` (with `ffprobe`), Python 3 with `Pillow`, `numpy`, `sherpa-onnx` and `mediapipe` (only for `face.py`).
+Runs on macOS and Linux (Windows untested). ffmpeg: `brew install ffmpeg` (Mac), `sudo apt install ffmpeg python3-venv`
+(Debian/Ubuntu), `sudo dnf install ffmpeg` (Fedora, from RPM Fusion). The pinned Python packages have wheels for
+Linux x86_64 and ARM64.
 The Python packages live in a project environment, `.venv/` (outside git):
 `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`. In the commands below, `python3` is that
 environment's: run `source .venv/bin/activate` first, or replace `python3` with `.venv/bin/python`.
 
 ## Flow
+
+The hexagons are the review checkpoints where the agent stops and waits for the author.
+
+```mermaid
+flowchart LR
+    A[Recording .mov] --> B[transcribe_words.py<br/>per-word timing, local]
+    B --> C[cuts.py<br/>plan.json]
+    C --> R1{{Review with the author<br/>cuts + captions}}
+    R1 -->|adjustments in edit.json| C
+    R1 --> D[sfx.json<br/>sound effects]
+    D --> E[render.py<br/>0.5x preview]
+    E --> R2{{Preview review}}
+    R2 --> F[render.py final]
+    F --> G[postaudio.py<br/>-14 LUFS]
+    G --> H[face.py + thumb.py<br/>covers]
+    H --> I[publish.py<br/>publish.md]
+```
 
 ```bash
 # 0. per-video preset: only what changes (crops measured on a frame of the recording); the rest comes from the base

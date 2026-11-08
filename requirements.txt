@@ -1,5 +1,5 @@
 # Install into a project environment: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-# Versions tested on macOS (Apple Silicon) with Python 3.13.
+# Versions tested on macOS (Apple Silicon) with Python 3.13. Linux: same versions, ffmpeg from the distro.
 sherpa-onnx==2.0.1
 numpy==2.5.4
 pillow==13.0.0

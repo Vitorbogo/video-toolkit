@@ -12,8 +12,12 @@ CMD = r"(?<![\w.-])"                                 # start of a command word (
 MEDIA = r"\.(?:mov|mp4|m4v|mkv|wav|mp3|m4a|aac|webm|mts|aiff?|onnx)" + END
 MOV = r"\.mov" + END
 PAYLOAD = r"(?:" + MEDIA + r"|(?:^|[\s\"'=/])videos(?:/|" + END + r"))"   # media or the videos/ folder
-DISCARD = (r"(?:(?:~|\$HOME|\$\{HOME\}|/Users/[^/\s]+)/\.Trash|(?:/private)?/tmp(?:/|" + END + r")"
+HOMES = r"(?:~|\$HOME|\$\{HOME\}|/Users/[^/\s]+|/home/[^/\s]+|/root)"           # macOS and Linux home folders
+TRASH = r"(?:" + HOMES + r"/(?:\.Trash|\.local/share/Trash)|\$\{?XDG_DATA_HOME\}?/Trash|trash:/)"  # Mac, freedesktop
+DISCARD = (r"(?:" + TRASH + r"|(?:/private|/var)?/tmp(?:/|" + END + r")"
            r"|/dev/null|\$\{?TMPDIR\}?|/var/folders/)")
+# delete commands, macOS and Linux (trash-cli, GNOME gio, KDE kioclient)
+RM = r"(?:rm|unlink|shred|srm|trash(?:-put)?|gio\s+(?:trash|remove)|gvfs-trash|kioclient[56]?\s+(?:del|move))"
 GIT_ADD = CMD + r"git(?:\s+(?:-C\s+\S+|-c\s+\S+|--[\w-]+(?:=\S+)?|-[a-zA-Z]+))*\s+(?:add|stage)\b"
 HOSTS = ["api.openai.com", "api.groq.com", "api.anthropic.com", "generativelanguage.googleapis.com",
          "api.elevenlabs.io", "api.replicate.com", "api.mistral.ai", "api.together.xyz",
@@ -29,11 +33,11 @@ MSG_HF = ("HyperFrames: only the local render is free (init, lint, snapshot, ren
 RULES = [
     (GIT_ADD + S + r"\s(?:(?-i:-[a-zA-Z]*f[a-zA-Z]*)|--force)" + END, "git add --force overrides .gitignore. " + MSG_GIT),
     (GIT_ADD + S + MEDIA, "Don't add media/models to git (video, audio, .onnx). " + MSG_GIT),
-    (CMD + r"(?:rm|unlink|shred|srm|trash)\s" + S + MOV, MSG_MOV),
+    (CMD + RM + r"\s" + S + MOV, MSG_MOV),
     (CMD + r"mv\s(?=" + S + MOV + r")(?:" + S + r"(?<=\s)[\"']?" + DISCARD + r"[^\s;|&]*\s*(?:$|[;|&\n)`])"  # destination is last
      r"|" + S + r"-t\s*[\"']?" + DISCARD + ")", MSG_MOV),
-    (CMD + r"find\s(?=" + S + r"mov\b)(?=" + S + r"(?:(?<=\s)-delete\b|(?<=\s)-exec(?:dir)?\s+\S*(?<![\w.-])(?:rm|trash|shred|unlink|mv)\b))", MSG_MOV),
-    (MOV + r"[^\n]*\|\s*xargs\b" + S + r"\s\S*(?<![\w.-])(?:rm|trash|shred|unlink)\b", MSG_MOV),
+    (CMD + r"find\s(?=" + S + r"mov\b)(?=" + S + r"(?:(?<=\s)-delete\b|(?<=\s)-exec(?:dir)?\s+\S*(?<![\w.-])(?:" + RM + r"|mv)\b))", MSG_MOV),
+    (MOV + r"[^\n]*\|\s*xargs\b" + S + r"\s\S*(?<![\w.-])" + RM + r"\b", MSG_MOV),
     (CMD + r"(?:curl|wget|https?|xh)\s" + S + r"(?:(?-i:(?<=\s)-[FTd]\b)|--form|--data|--upload-file|--post-file)" + S + PAYLOAD, MSG_UPLOAD),
     (CMD + r"(?:curl|wget|https?|xh)\s" + S + r"@\S*" + MEDIA, MSG_UPLOAD),
     (CMD + r"(?:scp|rsync|sftp)\s(?=" + S + PAYLOAD + r")(?=" + S + r"(?:(?<=\s)[\"']?[\w.@-]+:|rsync://))", MSG_UPLOAD),
