@@ -76,6 +76,7 @@ class FillersEN(unittest.TestCase):
     def test_basically_only_next_to_comma(self):
         self.assertEqual(cut("Basically, it is a list.", EN), ["Basically,"])
         self.assertEqual(cut("It is, basically, a list.", EN), ["basically,"])
+        self.assertEqual(cut("It is free, basically the same.", EN), ["basically"])  # comma before is enough
         self.assertEqual(cut("It is basically a list.", EN), [])
 
     def test_crutch_words_with_meaning_stay(self):

@@ -37,7 +37,7 @@ python3 src/vtk/transcribe_words.py --video RECORDING.mov --name <name>   # vide
 #    transcript.json gets "lang" (spoken language detected from the words; null when it can't tell)
 # 2. cuts decided by engine.py (the language's fillers, shortened pauses, edges from the audio) -> draft
 #    plan.json + edit-plan.md. Review cuts and captions with the author.
-python3 src/vtk/cuts.py --video RECORDING.mov --name <name> [--lang pt|en] [--zoom] [--no-scenes] [--force]
+python3 src/vtk/cuts.py --video RECORDING.mov --name <name> [--zoom] [--no-scenes] [--force]
 #    reads videos/<name>/transcript.json, edit.json and preset.json by default (if they exist)
 #    adjustments in videos/<name>/edit.json, with times of the original recording (they survive --force):
 #      cut [[a, b, "note"]]          removes the words in the range (warns if it catches none)
@@ -94,10 +94,10 @@ should not end on, and where a caption line breaks naturally.
   `transcript.json` (`null` when it can't tell). The transcription model (Parakeet TDT v3) is multilingual but
   does not report the language: detection is `src/vtk/lang.py`, local and deterministic (it counts each
   language's function words).
-- `cuts.py` uses, in this order: `--lang` > `"lang"` in `edit.json` > `"lang"` in `transcript.json` > detection.
+- `cuts.py` uses, in this order: `"lang"` in `edit.json` > `"lang"` in `transcript.json` > detection.
   Unsupported or undetectable language: it stops with an error asking for `"lang"` in `edit.json`. The choice and
   why are on the `Language:` line at the top of `edit-plan.md`.
-- `meta.json` takes an optional `"lang"` (shown in the `publish.md` header). Captions, cover texts and metadata
+- `meta.json` takes an optional `"lang"` (shown in the `publish.md` header; `publish.py` stops if it differs from the spoken language). Captions, cover texts and metadata
   follow the video's spoken language.
 
 Limits:

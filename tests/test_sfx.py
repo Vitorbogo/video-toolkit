@@ -23,6 +23,11 @@ class Check(unittest.TestCase):
         self.assertTrue(any("'pop'" in e for e in errors))
         self.assertTrue(any("outside the video" in e for e in errors))
 
+    def test_old_portuguese_names_say_the_new_one(self):
+        errors = sfx.check([{"t": 1.0, "som": "clique"}, {"t": 5.0, "sound": "whoosh-curto"}], 10)
+        self.assertTrue(any("'som'" in e and "'sound'" in e for e in errors), errors)
+        self.assertTrue(any("'whoosh-short'" in e for e in errors), errors)
+
     def test_effects_too_close(self):
         errors = sfx.check([{"t": 1.0, "sound": "click"}, {"t": 3.0, "sound": "pop-blip"}])
         self.assertTrue(any("less than" in e for e in errors))

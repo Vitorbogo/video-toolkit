@@ -97,6 +97,18 @@ class Fields(unittest.TestCase):
         for lang in ("pt", "en"):
             with self.subTest(lang=lang): self.assertEqual(check(meta(lang=lang)), ([], []))
 
+    def test_lang_must_be_supported_and_match_the_spoken_language(self):
+        errors, _ = check(meta(lang="fr"))
+        self.assertTrue(any("'fr'" in e for e in errors), errors)
+        errors, _ = publish.validate(publish.nfc(meta(lang="en")), P, 45.0, THUMB, COVERS, spoken="pt")
+        self.assertTrue(any("spoken in 'pt'" in e for e in errors), errors)
+        self.assertEqual(publish.validate(publish.nfc(meta(lang="pt")), P, 45.0, THUMB, COVERS, spoken="pt"), ([], []))
+
+    def test_old_portuguese_keys_fail_with_the_new_name(self):
+        M = meta(); M["comentario_fixado"] = "x"
+        errors, _ = check(M)
+        self.assertEqual(errors, ["meta.json uses the old Portuguese key 'comentario_fixado': rename it to 'pinned_comment'"])
+
 
 class Texts(unittest.TestCase):
     def test_title_over_max_is_error(self):

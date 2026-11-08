@@ -102,7 +102,8 @@ def stamp(t):
 
 
 def clean(w):
-    return re.sub(r"[^\w']", "", w.lower())
+    """Same as lang.clean: curly apostrophe as straight, so "don’t" matches "don't"."""
+    return re.sub(r"[^\w']", "", w.lower().replace("’", "'"))
 
 
 # ---------- looking and listening ----------

@@ -37,8 +37,8 @@ def invariants(tc, plan, fps=30.0):
             tc.assertTrue(0 <= b[0] < b[1] <= d + 1e-6 and len(b) == 6, (b, d))
 
 
-def decide(tc, ws, edit=None, **kw):
-    plan, removed, maybe = cuts.decide(ws, edit or {}, **kw)
+def decide(tc, ws, edit=None, lang="pt", **kw):
+    plan, removed, maybe = cuts.decide(ws, edit or {}, lang=lang, **kw)
     invariants(tc, plan, kw.get("fps", 30.0))
     return plan, removed, maybe
 
@@ -272,24 +272,23 @@ class Language(unittest.TestCase):
     T_PT = {"words": words(phrase("Hoje eu quero mostrar para vocês como isso é feito."))}
     T_EN = {"words": words(phrase("Today I want to show you how this is done and why it is free."))}
 
-    def test_order_flag_edit_transcript_detection(self):
+    def test_order_edit_transcript_detection(self):
         both = dict(self.T_PT, lang="en")
-        self.assertEqual(cuts.resolve_lang("pt", {"lang": "en"}, both), ("pt", "--lang"))
-        self.assertEqual(cuts.resolve_lang(None, {"lang": "pt"}, both), ("pt", "edit.json"))
-        self.assertEqual(cuts.resolve_lang(None, {}, both), ("en", "transcript.json"))
-        code, why = cuts.resolve_lang(None, {}, self.T_PT)
+        self.assertEqual(cuts.resolve_lang({"lang": "pt"}, both), ("pt", "edit.json"))
+        self.assertEqual(cuts.resolve_lang({}, both), ("en", "transcript.json"))
+        code, why = cuts.resolve_lang({}, self.T_PT)
         self.assertEqual(code, "pt"); self.assertIn("detected", why)
-        self.assertEqual(cuts.resolve_lang(None, {}, dict(self.T_EN, lang=None))[0], "en")
+        self.assertEqual(cuts.resolve_lang({}, dict(self.T_EN, lang=None))[0], "en")
 
     def test_unsupported_language_says_how_to_fix(self):
-        for args in (("es", {}, self.T_PT), (None, {"lang": "es"}, self.T_PT), (None, {}, dict(self.T_PT, lang="es"))):
+        for args in (({"lang": "es"}, self.T_PT), ({}, dict(self.T_PT, lang="es"))):
             with self.assertRaises(SystemExit) as e:
                 cuts.resolve_lang(*args)
             self.assertIn("'es'", str(e.exception)); self.assertIn("\"lang\" in videos/<name>/edit.json", str(e.exception))
 
     def test_undetectable_language_says_how_to_fix(self):
         with self.assertRaises(SystemExit) as e:
-            cuts.resolve_lang(None, {}, {"words": words(phrase("Primeira frase. Segunda frase."))})
+            cuts.resolve_lang({}, {"words": words(phrase("Primeira frase. Segunda frase."))})
         self.assertIn("could not tell", str(e.exception)); self.assertIn("edit.json", str(e.exception))
 
     def test_report_shows_the_language(self):
@@ -324,7 +323,7 @@ class Cli(unittest.TestCase):
             self.assertIn("cut by hand", read("edit-plan.md"))
             self.assertIn("Language: pt (detected from the transcript", read("edit-plan.md"))
 
-    def test_english_transcript_and_lang_flag(self):
+    def test_english_transcript_and_lang_in_edit_json(self):
         with tempfile.TemporaryDirectory() as d:
             v = os.path.join(d, "videos", "x"); os.makedirs(v)
             ws = words(phrase("Today I want, um, to show you how it works.", 0.0))
@@ -340,10 +339,12 @@ class Cli(unittest.TestCase):
                 self.assertIn("language: en (transcript.json)", out.getvalue())
                 with open(os.path.join(v, "plan.json"), encoding="utf-8") as fh:
                     self.assertEqual(text_of(json.load(fh)), "Today I want, to show you how it works.")
-                with mock.patch.object(sys, "argv", argv + ["--force", "--lang", "pt"]):
+                with open(os.path.join(v, "edit.json"), "w", encoding="utf-8") as fh:
+                    json.dump({"lang": "pt"}, fh)
+                with mock.patch.object(sys, "argv", argv + ["--force"]):
                     cuts.main()
                 with open(os.path.join(v, "edit-plan.md"), encoding="utf-8") as fh:
-                    self.assertIn("Language: pt (--lang)", fh.read())
+                    self.assertIn("Language: pt (edit.json)", fh.read())
 
 
 if __name__ == "__main__":
