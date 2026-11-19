@@ -49,7 +49,9 @@ transcript.txt
 .DS_Store
 __pycache__/
 
-# the author's personal context (folders, audience, content decisions)
+# the author profile (preferences, setup, folders): one per clone; the template is profile.example/
+/profile/
+# where older clones kept the author's context, before profile/
 CLAUDE.local.md
 
 # each video's content (transcript, cuts, metadata, covers, render) stays local: the repo is public

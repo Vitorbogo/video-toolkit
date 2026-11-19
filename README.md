@@ -4,7 +4,8 @@ A local, free toolkit (ffmpeg + Python) that turns a screen + camera recording i
 (TikTok, YouTube Shorts): cuts fillers and pauses, draws word-by-word captions, levels the audio, makes covers and
 writes the publishing metadata. A Claude Code agent runs the whole flow and stops at review checkpoints with the
 author. Works for videos spoken in Portuguese or English. Nothing leaves the machine and no paid API is used. Each
-author's context (folders, audience, content decisions) lives in a `CLAUDE.local.md` outside git.
+author's preferences, setup and folders live in `profile/`, outside git; the agent
+creates it from the `profile.example/` template on the first video.
 
 ## Layout
 
