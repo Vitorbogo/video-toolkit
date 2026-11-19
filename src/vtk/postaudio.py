@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Deterministic audio treatment, in 2 passes, over the assembled video.
 
-Chain (fixed order, parameters in the preset): high-pass filter -> noise reduction (afftdn, OFF in the preset:
+Chain (fixed order, parameters in the preset): high-pass filter -> voice EQ (optional) -> exciter
+(optional: synthetic high harmonics, "air" a band-limited recording lacks) -> noise reduction (afftdn, OFF in the preset:
 it made the voice robotic with the microphone used) -> gentle compressor -> pre-limiter -> loudnorm measured
 (pass 1) and applied LINEAR (pass 2: fixed gain, no pumping) -> final limiter.
 The video is copied without re-encoding; audio comes out as AAC 48 kHz. Accepts render.py's final.mov (h264 + PCM).
@@ -27,6 +28,7 @@ if os.path.join(ROOT, "src") not in sys.path:
     sys.path.insert(0, os.path.join(ROOT, "src"))
 from vtk import preset, sfx
 
+EQ_TYPES = {"lowshelf": "lowshelf", "highshelf": "highshelf", "peak": "equalizer"}  # audio.eq: [type, Hz, dB, q]
 TOL_I = 0.5           # LU tolerance on the integrated loudness of the result
 LIMIT_MIN_DB = -24.0  # lowest alimiter limit (0.0625)
 STEP_DB = 0.2         # extra headroom on each new pre-limit / new attempt
@@ -57,6 +59,18 @@ def check_preset(A):
         sys.exit("preset: audio.pre_limiter must be \"auto\" or a number between 0.0625 and 1 (got %r)" % (pl,))
     tm = A.get("tp_margin_db", 1.0)
     if not isinstance(tm, (int, float)) or tm < 0: sys.exit("preset: audio.tp_margin_db must be a number >= 0 (got %r)" % (tm,))
+    eq = A.get("eq", [])
+    if not isinstance(eq, list): sys.exit("preset: audio.eq must be a list of [type, freq_hz, gain_db, q]")
+    for b in eq:
+        ok = (isinstance(b, list) and len(b) == 4 and b[0] in EQ_TYPES and all(isinstance(v, (int, float)) for v in b[1:])
+              and 20 <= b[1] <= 20000 and abs(b[2]) <= 12 and 0.1 <= b[3] <= 10)
+        if not ok: sys.exit("preset: audio.eq band %r: use [lowshelf|highshelf|peak, 20-20000 Hz, -12..12 dB, q 0.1-10]" % (b,))
+    ex = A.get("exciter")
+    if ex is not None:
+        keys = ("amount", "drive", "freq", "ceil")
+        if not (isinstance(ex, dict) and all(isinstance(ex.get(k), (int, float)) for k in keys)
+                and 0 < ex["amount"] <= 64 and 0.1 <= ex["drive"] <= 10 and 2000 <= ex["freq"] < ex["ceil"] <= 20000):
+            sys.exit("preset: audio.exciter must be {amount 0-64, drive 0.1-10, freq 2000-20000 Hz, ceil > freq} (got %r)" % (ex,))
     if "limiter" in A:
         print("warning: the preset's audio.limiter is no longer used (final limit = TP - tp_margin_db)")
 
@@ -67,6 +81,11 @@ def chain(A, pre_db=None):
     that rate, but in pass 2 (linear) it ran at 48 kHz. A limiter at 48 kHz doesn't see inter-sample peaks,
     and the true peak came out ~2 dB above the measured one. At 192 kHz the limiter acts on the true peak."""
     f = ["aresample=192000", f"highpass=f={A['highpass_hz']}"]
+    for kind, hz, g, q in A.get("eq", []):
+        f.append(f"{EQ_TYPES[kind]}=f={hz}:g={g}:t=q:w={q}")
+    ex = A.get("exciter")
+    if ex:
+        f.append(f"aexciter=amount={ex['amount']}:drive={ex['drive']}:blend=0:freq={ex['freq']}:ceil={ex['ceil']}:listen=0")
     dn = A.get("denoise") or {}
     if dn.get("enabled"):
         f.append(f"afftdn=nr={dn['nr_db']}:nf={dn['noise_floor_db']}")

@@ -22,6 +22,10 @@ replace, extra_fillers...) and ours (trim, zoom, blur, lang):
   "zoom": [[t, z]]          "z" on the piece that contains time t (max 1.2; z <= 1 removes the zoom)
   "blur": [[t0, t1, x, y, w, h, "note"]]  blur box; x/y/w/h in pixels of the original recording
   "lang": "en"              spoken language, when detection gets it wrong or can't tell
+  "intro": 6.2              the video opens at this time, raw (an opening without speech the engine would drop,
+                            e.g. the author sitting down); only moves the first piece's start earlier
+  "outro": 65.6             the video ends at this time, raw (speech the transcript missed, a closing beat);
+                            only moves the last piece's end later
 Every manual decision goes in edit.json: --force rebuilds plan.json without losing anything (a repeated caption
 fix goes in "replace"). The language's fillers (presets/fillers-<lang>.json) always apply; edit.json's add to them.
 Automatic zoom is optional and OFF: use --zoom only when the jump cuts feel abrupt. With it, the skill's rule
@@ -228,6 +232,14 @@ def decide(words, edit, total, fps=30.0, db=(), floor=-60.0, blacks=(), scenes=(
     spans = trim(words, reason, spans, spec.get("trim", []), fps, warnings)
     spans = finish(words, reason, spans, fps, total, warnings)
     if not spans: sys.exit("cuts: no piece left; check 'cut' and 'trim' in edit.json")
+    if "intro" in spec:
+        t = max(0.0, fr(float(spec["intro"]), fps))
+        if t < spans[0][0]: spans[0] = (round(t, 6), spans[0][1])
+        else: warnings.append(f"intro {t:.2f} s is not before the first piece ({spans[0][0]:.2f} s): ignored")
+    if "outro" in spec:
+        t = min(fr(float(spec["outro"]), fps), fr(total, fps, math.floor))
+        if t > spans[-1][1]: spans[-1] = (spans[-1][0], round(t, 6))
+        else: warnings.append(f"outro {t:.2f} s is not after the last piece ({spans[-1][1]:.2f} s): ignored")
     removed = removals(words, reason, spans, total, spec.get("trim", []))
     first = {w["start"]: i for i, w in reversed(list(enumerate(words)))}
     maybe = [m for m in maybe if not all(reason[first[m[0]]:first[m[0]] + len(m[1].split())])]

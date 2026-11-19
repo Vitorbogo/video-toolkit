@@ -181,6 +181,13 @@ class Decide(unittest.TestCase):
         plan, _, _ = decide(self, ws, {"replace": {"ocupação": "ocupação,"}}, total=2.0)
         self.assertEqual(text_of(plan), "Apelido, ocupação, mais.")
 
+    def test_replace_key_ending_in_punctuation(self):
+        ws = words(phrase("Explicando o quê? Ou o porquê.", gap=0.6))
+        plan, _, _ = decide(self, ws, {"replace": {"o quê?": "o quê", "o porquê.": "o porquê!"}}, total=6.0)
+        self.assertEqual(text_of(plan), "Explicando o quê Ou o porquê!")
+        plan, _, _ = decide(self, words(phrase("Aquele aquecimento.")), {"replace": {"que": "X"}}, total=2.0)
+        self.assertEqual(text_of(plan), "Aquele aquecimento.")  # still whole words only
+
     def test_trim_removes_range_without_words_and_warns_on_words(self):
         # 0.45 s pause inside the sentence: the skill keeps it; trim removes it
         ws = words([("Um", 0.0, 0.4), ("dois", 0.5, 0.9), ("três", 1.35, 1.8), ("quatro.", 1.9, 2.4)])
@@ -196,6 +203,32 @@ class Decide(unittest.TestCase):
         self.assertEqual(warnings, [])
         decide(self, ws, {"trim": [[0.95, 1.5]]}, total=3.0, warnings=warnings)
         self.assertTrue(any("três" in a for a in warnings), warnings)
+
+    def test_intro_keeps_the_raw_opening_before_the_first_word(self):
+        # 3 s with no speech before the first word (author sitting down): the engine drops it; "intro" keeps it
+        ws = words(phrase("Bom, vamos começar agora.", t0=3.0))
+        plan, _, _ = decide(self, ws, total=6.0)
+        self.assertGreater(plan[0]["s"], 2.5)
+        plan, removed, _ = decide(self, ws, {"intro": 1.0}, total=6.0)
+        self.assertAlmostEqual(plan[0]["s"], 1.0, delta=1e-6)
+        self.assertEqual(text_of(plan), "Bom, vamos começar agora.")
+        self.assertAlmostEqual(plan[0]["ev"][0][0], 2.0, delta=0.05)  # caption still on the first word
+        self.assertTrue(all(r[1] <= 1.0 + 1e-6 for r in removed if r[0] < 1.0), removed)
+        warnings = []
+        decide(self, ws, {"intro": 4.0}, total=6.0, warnings=warnings)
+        self.assertTrue(any("intro" in a for a in warnings), warnings)
+
+    def test_outro_keeps_speech_the_transcript_missed_at_the_end(self):
+        ws = words(phrase("Bom, vamos começar agora.", t0=1.0))  # last word ends at 2.5
+        plan, _, _ = decide(self, ws, total=6.0)
+        self.assertLess(plan[-1]["e"], 3.0)
+        plan, _, _ = decide(self, ws, {"outro": 4.2}, total=6.0)
+        self.assertAlmostEqual(plan[-1]["e"], 4.2, delta=1e-6)
+        plan, _, _ = decide(self, ws, {"outro": 9.0}, total=6.0)
+        self.assertAlmostEqual(plan[-1]["e"], 6.0, delta=1e-6)  # never past the recording
+        warnings = []
+        decide(self, ws, {"outro": 2.0}, total=6.0, warnings=warnings)
+        self.assertTrue(any("outro" in a for a in warnings), warnings)
 
     def test_zoom_from_edit_json(self):
         ws = words(phrase("Primeira frase.", 0.0) + phrase("Segunda frase.", 4.0) + phrase("Terceira frase.", 8.0))
