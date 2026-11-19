@@ -397,7 +397,7 @@ def srt_time(t):
 
 def apply_replace(text, rep):
     for a, b in rep.items():
-        text = re.sub(r"\b" + re.escape(a) + r"\b", b, text, flags=re.I)
+        text = re.sub(r"(?<!\w)" + re.escape(a) + r"(?!\w)", b, text, flags=re.I)  # \b fails on keys ending in "?"
     return text
 
 

@@ -67,6 +67,8 @@ python3 src/vtk/cuts.py --video RECORDING.mov --name <name> [--zoom] [--no-scene
 #      zoom [[t, 1.1]]               zoom on the camera only, in the piece that contains t (max 1.2; 1 removes it)
 #      blur [[t0, t1, x, y, w, h, "note"]] blurs the box (recording pixels) between t0 and t1
 #      lang "en"                     spoken language, when detection gets it wrong or can't tell
+#      intro 6.2                     the video opens at this time, raw (e.g. the author sitting down before speaking)
+#      outro 65.6                    the video ends at this time, raw (speech the transcript missed, a closing beat)
 #      style, pauses, extra_fillers  engine.py keys
 #    zoom is optional and off: only if the jump cuts feel abrupt (--zoom suggests, edit.json decides)
 #    --no-scenes ignores slide changes when placing cuts

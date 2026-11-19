@@ -74,6 +74,27 @@ class Chain(unittest.TestCase):
         B["denoise"] = {"enabled": True, "nr_db": 3, "noise_floor_db": -60}
         self.assertIn("afftdn=nr=3:nf=-60", pa.chain(B))
 
+    def test_optional_voice_eq_after_the_high_pass(self):
+        self.assertNotIn("equalizer", pa.chain(A))
+        B = dict(A, eq=[["lowshelf", 140, 3, 0.7], ["peak", 500, -3, 1.4], ["highshelf", 8000, 1, 0.7]])
+        c = pa.chain(B)
+        self.assertIn("highpass=f=80,lowshelf=f=140:g=3:t=q:w=0.7,equalizer=f=500:g=-3:t=q:w=1.4,"
+                      "highshelf=f=8000:g=1:t=q:w=0.7,acompressor", c)
+        pa.check_preset(B)
+        for bad in ([["notch", 500, -3, 1]], [["peak", 500, -30, 1]], [["peak", 30000, 1, 1]], [["peak", 500, 1]],
+                    [["peak", 500, 1, 0]], "lowshelf=f=140"):
+            with self.assertRaises(SystemExit, msg=bad): pa.check_preset(dict(A, eq=bad))
+
+    def test_optional_exciter_after_the_eq(self):
+        self.assertNotIn("aexciter", pa.chain(A))
+        B = dict(A, eq=[["peak", 500, -3, 1.4]], exciter={"amount": 1.5, "drive": 6, "freq": 6000, "ceil": 16000})
+        self.assertIn("equalizer=f=500:g=-3:t=q:w=1.4,aexciter=amount=1.5:drive=6:blend=0:freq=6000:ceil=16000:listen=0,"
+                      "acompressor", pa.chain(B))
+        pa.check_preset(B)
+        for bad in ({"amount": 1.5}, {"amount": 99, "drive": 6, "freq": 6000, "ceil": 16000},
+                    {"amount": 1, "drive": 6, "freq": 9000, "ceil": 8000}, "on"):
+            with self.assertRaises(SystemExit, msg=bad): pa.check_preset(dict(A, exciter=bad))
+
     def test_invalid_preset(self):
         for k in ("loudnorm", "compressor"):
             B = dict(A); B.pop(k)
