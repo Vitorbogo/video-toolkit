@@ -24,7 +24,12 @@ Craft rules (true for any author; why in .claude/skills/edit-video/SKILL.md):
     calling attention); LONG_V only at a topic change (a speech gap of TOPIC_GAP or more, the engine's long_gap)
     and only if the mouth-closed footage covers it, else SHORT_V.
 
-Area, when edit.json gives none: "both" (the author's preference, profile/brand.md), except at a slide change
+  - at most one J-cut every MIN_SPACING s of final video: more and the device shows (candidates keep that spacing,
+    J-cuts asked for closer together get a warning);
+  - one transition per join: a J-cut join takes no zoom punch-in (warned here) and no whoosh (sfx.py check).
+
+Area, when edit.json gives none: "both" (the craft default; an author who prefers otherwise has it in profile/brand.md
+and the edit-video skill writes that area in each edit.json item), except at a slide change
 where the next piece opens pointing at the screen ("olha", "look": pointing_words in presets/fillers-<lang>.json):
 there the screen must change with the voice, so only the camera waits ("camera").
 """
@@ -41,7 +46,11 @@ MIN_PICTURE = 1.5   # B's own picture after the shift
 SPEECH_MARGIN = 0.05  # borrowed footage ends this long before B's first word
 MOUTH_OPEN = 0.1    # face.py's raw "mouth" score above this = mouth moving (closed ~0-0.04, speech 0.1-0.7)
 MOUTH_FPS = 15
-SILENT = {"silence", "trim"}  # removal reasons whose footage can be borrowed (a trim is measured by the mouth check)
+MIN_SPACING = 10.0  # final-video seconds between two J-cuts (the issue's "at most one every ~10-15 s")
+JOIN_WITHIN = 2.0   # an edit.json "jcut" time must be this close to a join
+# removal reasons whose footage can be borrowed: a trim's footage is measured by the mouth check when the camera
+# moves; a slide-only J-cut borrows no face, and the borrowed footage is never heard (the sound does not move)
+SILENT = {"silence", "trim"}
 
 
 def moves(area, which):
@@ -59,7 +68,24 @@ def parse(item):
     return t, v, area, note
 
 
-def nearest_join(plan, t, within=2.0):
+def floor_frame(x, fps):
+    """x seconds rounded down to the frame grid."""
+    return math.floor(round(x * fps, 6)) / fps
+
+
+def frame_starts(nframes):
+    """First frame of each piece in the final video, plus the total: [0, n0, n0+n1, ...]."""
+    F = [0]
+    for q in nframes: F.append(F[-1] + q)
+    return F
+
+
+def join_time(plan, n):
+    """Final-video time of the join plan[n] | plan[n+1] (the sound timeline)."""
+    return sum(c["e"] - c["s"] for c in plan[:n + 1])
+
+
+def nearest_join(plan, t, within=JOIN_WITHIN):
     """Index n of the join plan[n] | plan[n+1] closest to recording time t (inside the removed gap = 0), or None."""
     best = None
     for n in range(len(plan) - 1):
@@ -107,8 +133,7 @@ def check(plan, n, removed, fps, area="both", mouth=None):
         if mouth is None: return None, "mouth not measured (MediaPipe or the face model missing)"
         m = mouth(A["e"], end)
         if m is not None and m < end: end, why = m, "mouth opens"
-    lead = math.floor(round((end - A["e"]) * fps, 6)) / fps
-    lead = min(lead, math.floor(round((B["e"] - B["s"] - MIN_PICTURE) * fps, 6)) / fps)
+    lead = min(floor_frame(end - A["e"], fps), floor_frame(B["e"] - B["s"] - MIN_PICTURE, fps))
     v = round(lead - pre, 3)
     if v < MIN_V - 1e-6:
         return None, f"only {max(0.0, v):.2f} s of voice before picture fits ({why} {end - A['e']:.2f} s after the cut)"
@@ -136,6 +161,12 @@ def choose(plan, n, kept=(), scenes=(), pointing=()):
     why.insert(0, "sentence end"); return area, SHORT_V, "; ".join(why)
 
 
+def fallback(auto_v, vmax, limit, why):
+    """choose()'s length against what the footage allows: LONG_V that doesn't fit falls back to SHORT_V."""
+    if vmax >= auto_v - 1e-6 or auto_v <= SHORT_V: return auto_v, why
+    return SHORT_V, why + f"; {limit} too soon for {LONG_V:g} s"
+
+
 def apply(plan, items, removed, fps, mouth=None, warnings=None, kept=(), scenes=(), pointing=()):
     """edit.json "jcut" items -> "j": [lead, area] on the piece each join leads into.
     Returns [(n, V, area, why)]. Length and area the item leaves out are chosen by choose()."""
@@ -145,44 +176,51 @@ def apply(plan, items, removed, fps, mouth=None, warnings=None, kept=(), scenes=
         t, v, area, note = parse(it)
         n = nearest_join(plan, t)
         if n is None:
-            warnings.append(f"jcut at {t:.2f} s: no join within 2 s"); continue
+            warnings.append(f"jcut at {t:.2f} s: no join within {JOIN_WITHIN:g} s"); continue
+        if not sentence_end(plan[n]):
+            warnings.append(f"jcut at {t:.2f} s skipped: the piece before it does not end a sentence "
+                            "(a J-cut reads as a new thought)"); continue
         auto_area, auto_v, why = choose(plan, n, kept, scenes, pointing)
         area = area or auto_area
-        vmax, cap = check(plan, n, removed, fps, area, mouth)
+        vmax, limit = check(plan, n, removed, fps, area, mouth)
         if vmax is None:
-            warnings.append(f"jcut at {t:.2f} s (join {plan[n]['e']:.2f}|{plan[n + 1]['s']:.2f}) skipped: {cap}"); continue
-        if v is None:
-            v = auto_v if vmax >= auto_v - 1e-6 else SHORT_V
-            if auto_v > SHORT_V and v == SHORT_V: why += f"; {cap} too soon for {LONG_V:g} s"
-        else:
-            why = "set in edit.json"
+            warnings.append(f"jcut at {t:.2f} s (join {plan[n]['e']:.2f}|{plan[n + 1]['s']:.2f}) skipped: {limit}"); continue
+        if v is None: v, why = fallback(auto_v, vmax, limit, why)
+        else: why = "set in edit.json"
         if v > vmax + 1e-6:
-            warnings.append(f"jcut at {t:.2f} s: voice-before-picture {v:.2f} s shortened to {vmax:.2f} s ({cap})")
+            warnings.append(f"jcut at {t:.2f} s: voice-before-picture {v:.2f} s shortened to {vmax:.2f} s ({limit})")
             v = vmax
-        if not sentence_end(plan[n]):
-            warnings.append(f"jcut at {t:.2f} s: the piece before it does not end a sentence (a J-cut reads as a new thought)")
-        B = plan[n + 1]; pre = onset(B) - B["s"]
+        A, B = plan[n], plan[n + 1]; pre = onset(B) - B["s"]
+        if A.get("z", 1) != B.get("z", 1):
+            warnings.append(f"jcut at {t:.2f} s: the zoom also changes at this join (one transition per join): "
+                            "drop the zoom or the J-cut")
         # next frame up (V never less than asked; 0.05 frame of slack for "wt" kept to 3 decimals), never past
         # what the footage allows
-        lead = min(math.ceil(round((v + pre) * fps, 6) - 0.05) / fps, math.floor(round((vmax + pre) * fps, 6)) / fps)
+        lead = min(math.ceil(round((v + pre) * fps, 6) - 0.05) / fps, floor_frame(vmax + pre, fps))
         B["j"] = [round(lead, 6), area]
         done.append((n, round(lead - pre, 3), area, why + (f"; {note}" if note else "")))
+    at = sorted(join_time(plan, n) for n, *_ in done)
+    for a, b in zip(at, at[1:]):
+        if b - a < MIN_SPACING:
+            warnings.append(f"J-cuts at {a:.1f} s and {b:.1f} s of the final video: less than {MIN_SPACING:g} s apart "
+                            "(the device starts to show)")
     return done
 
 
 def candidates(plan, removed, fps, mouth=None, kept=(), scenes=(), pointing=()):
     """Joins that could take a J-cut, for edit-plan.md: [(n, recording time, V, area, why)] with the length and area
-    choose() would pick, capped by the footage."""
+    choose() would pick, capped by the footage, at least MIN_SPACING s (final video) from any J-cut or other candidate."""
     out = []
+    taken = [join_time(plan, n) for n in range(len(plan) - 1) if "j" in plan[n + 1]]
     for n in range(len(plan) - 1):
         if "j" in plan[n + 1] or not sentence_end(plan[n]): continue
+        if any(abs(join_time(plan, n) - x) < MIN_SPACING for x in taken): continue
         area, v, why = choose(plan, n, kept, scenes, pointing)
-        vmax, cap = check(plan, n, removed, fps, area, mouth)
+        vmax, limit = check(plan, n, removed, fps, area, mouth)
         if vmax is None: continue
-        if v > vmax + 1e-6:
-            if v > SHORT_V and vmax >= SHORT_V - 1e-6: v, why = SHORT_V, why + f"; {cap} too soon for {LONG_V:g} s"
-            else: v = vmax
-        out.append((n, plan[n]["e"], round(v, 3), area, why))
+        v, why = fallback(v, vmax, limit, why)
+        out.append((n, plan[n]["e"], round(min(v, vmax), 3), area, why))
+        taken.append(join_time(plan, n))
     return out
 
 
@@ -230,8 +268,7 @@ def picture(plan, nframes, fps):
     -> [{"f0": first frame in the final video, "n": frames, "cam": piece the camera comes from, "sl": slide's}].
     Without "j" it is one clip per piece, like before. A J-cut on piece B moves the camera and/or slide switch
     from A to B `lead` frames later; a negative lead (L-cut) would move it earlier."""
-    F = [0]
-    for q in nframes: F.append(F[-1] + q)
+    F = frame_starts(nframes)
     sw = {"cam": [0], "sl": [0]}
     for i in range(1, len(plan)):
         j = plan[i].get("j")

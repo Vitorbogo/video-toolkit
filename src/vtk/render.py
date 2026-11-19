@@ -220,8 +220,7 @@ def blur_at(plan, t0, D):
 def clips(plan, info, fps):
     """plan + check_plan's info -> the picture clips: [(segment-like dict, frames, zoom, start in the final video)]."""
     nframes = [q for q, _ in info]
-    F = [0]
-    for q in nframes: F.append(F[-1] + q)
+    F = jcut.frame_starts(nframes)
     events = jcut.caption_events(plan, nframes, fps)
     out = []
     for p in jcut.picture(plan, nframes, fps):

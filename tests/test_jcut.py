@@ -145,7 +145,26 @@ class Apply(unittest.TestCase):
         self.assertTrue(any("skipped" in x for x in w) and any("no join" in x for x in w), w)
         plan, w = two(A_ev="Primeira ideia e"), []
         jcut.apply(plan, [[2.5]], SILENT, 30, CLOSED, w)
-        self.assertIn("j", plan[1]); self.assertIn("does not end a sentence", w[0])
+        self.assertNotIn("j", plan[1]); self.assertIn("does not end a sentence", w[0])
+
+    def test_zoom_on_the_same_join_warns(self):
+        plan, w = two(), []
+        plan[1]["z"] = 1.15
+        jcut.apply(plan, [[2.5]], SILENT, 30, CLOSED, w)
+        self.assertIn("j", plan[1]); self.assertTrue(any("one transition per join" in x for x in w), w)
+
+    def test_spacing(self):
+        def many(k, d=4.0):  # k pieces of d s, each ending a sentence, 1 s of silence removed between them
+            plan = [{"s": i * (d + 1), "e": i * (d + 1) + d, "ev": [[0.3, d - 0.2, "Uma ideia."]], "wt": [[0.3, 1.0]]}
+                    for i in range(k)]
+            return plan, [(i * (d + 1) + d, (i + 1) * (d + 1), "silence", "") for i in range(k - 1)]
+        plan, removed = many(6)  # joins at 4, 8, 12, 16, 20 s of final video
+        w = []
+        jcut.apply(plan, [[4.5], [9.5]], removed, 30, CLOSED, w)  # 4 s apart
+        self.assertTrue(any("apart" in x for x in w), w)
+        plan, removed = many(6)
+        got = [jcut.join_time(plan, c[0]) for c in jcut.candidates(plan, removed, 30, CLOSED)]
+        self.assertEqual(got, [4.0, 16.0])
 
 
 class Decide(unittest.TestCase):

@@ -33,7 +33,8 @@ The author runs nothing: you run everything and stop at the **review checkpoints
    - Right after approval, write `meta.json` (skill `publish-video`).
    - **J-cuts** (the next piece's voice starts before its picture; see the gotcha), if `profile/brand.md` uses them:
      pick joins from "J-cut candidates" in `edit-plan.md`, put them in `"jcut"` in `edit.json` (just `[t]`: length and
-     area are chosen per join) and run again with `--force`. They are judged on the preview, not in this table.
+     area are chosen per join; if `profile/brand.md` says only the camera or only the slide waits, write that area
+     in each item: `[t, "camera"]`) and run again with `--force`. They are judged on the preview, not in this table.
    **Done when** cuts and captions are approved.
 
 5. **Preview** (`render.py ... --out videos/<name>/render_prev --scale 0.5 --crf 30`, plus `--panel videos/<name>/illustration.mp4` if there is an illustration). It comes out at `render_prev/final.mov`. Look at a few frames (blur in place, caption whole inside the screen, face framed; inside each J-cut lead, a closed mouth). 👀 **Review 2:** give the preview path so it can be watched with headphones, with the time of each J-cut (`sfx.py marks` prints them) so the author judges each one. **Done when** the preview is approved; changes go back to `edit.json` (step 4).
@@ -86,7 +87,10 @@ The author runs nothing: you run everything and stop at the **review checkpoints
   - **When the slide changes at the join and the next words point at the screen** ("olha", "look"), the screen must
     change with the voice: only the camera waits (`"camera"`). `cuts.py` picks that from `pointing_words` in
     `presets/fillers-<lang>.json`.
-  - One transition per join: a J-cut takes no whoosh or zoom punch-in on the same join.
+  - **Not too often:** at most one J-cut every ~10 s of final video, or the device shows. Candidates keep that
+    spacing; J-cuts asked for closer together get a warning.
+  - One transition per join: a J-cut takes no whoosh or zoom punch-in on the same join (`cuts.py` warns about the
+    zoom, `sfx.py check --plan` refuses the whoosh). A join that doesn't end a sentence is skipped.
   - Approve J-cuts on the preview, never from `edit-plan.md`: nobody can judge one from a table.
 - **Temporary files of yours:** `.mkv`/`.mp4`, never `.mov` (the guard blocks `rm` on any `.mov`).
 - **Changed a toolkit script?** Run `.venv/bin/python -m unittest discover tests` before going on.

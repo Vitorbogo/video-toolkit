@@ -89,8 +89,14 @@ def timeline(plan):
     return out
 
 
-def check(cues, duration=None):
-    """List of problems (empty = ok): unknown sound, outside the video, effects too close together."""
+def jcut_joins(plan):
+    """[(voice starts, picture changes)] in the final video for each J-cut of plan.json."""
+    return [(u, u + c["j"][0]) for u, _, c in timeline(plan) if c.get("j")]
+
+
+def check(cues, duration=None, joins=()):
+    """List of problems (empty = ok): unknown sound, outside the video, effects too close together, a whoosh on a
+    J-cut join (joins = jcut_joins(plan): one transition per join)."""
     errors = []
     for i, c in enumerate(cues):
         if "som" in c:
@@ -104,6 +110,10 @@ def check(cues, duration=None):
         v = c.get("vol")
         if v is not None and not (0 < v <= 1):
             errors.append(f"#{i}: vol={v} outside (0, 1]")
+        if str(c.get("sound", "")).startswith("whoosh") and isinstance(c.get("t"), (int, float)):
+            for a, b in joins:
+                if a - 0.5 <= c["t"] <= b + 0.5:
+                    errors.append(f"#{i}: whoosh at {c['t']:.1f}s on the J-cut join {a:.2f}s-{b:.2f}s (one transition per join)")
     ts = sorted(c["t"] for c in cues if isinstance(c.get("t"), (int, float)))
     for a, b in zip(ts, ts[1:]):
         if b - a < MIN_GAP_S:
@@ -144,8 +154,9 @@ def main():
                 print(f"    {u + x0:7.2f}s  {txt}")
         return
     cues = json.load(open(a.sfx, encoding="utf-8"))
-    dur = timeline(json.load(open(a.plan, encoding="utf-8")))[-1][1] if a.plan else None
-    errors = check(cues, dur)
+    plan = json.load(open(a.plan, encoding="utf-8")) if a.plan else None
+    dur = timeline(plan)[-1][1] if plan else None
+    errors = check(cues, dur, jcut_joins(plan) if plan else ())
     for e in errors: print("ERROR", e)
     if errors: sys.exit(1)
     print(f"ok: {len(cues)} effects")

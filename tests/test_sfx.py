@@ -28,6 +28,13 @@ class Check(unittest.TestCase):
         self.assertTrue(any("'som'" in e and "'sound'" in e for e in errors), errors)
         self.assertTrue(any("'whoosh-short'" in e for e in errors), errors)
 
+    def test_whoosh_on_a_jcut_join(self):
+        plan = [{"s": 0.0, "e": 4.0, "ev": []}, {"s": 5.0, "e": 9.0, "ev": [], "j": [0.5, "both"]}]
+        joins = sfx.jcut_joins(plan)
+        self.assertEqual(joins, [(4.0, 4.5)])
+        self.assertTrue(any("J-cut" in e for e in sfx.check([{"t": 4.2, "sound": "whoosh-short"}], 10, joins)))
+        self.assertEqual(sfx.check([{"t": 4.2, "sound": "pop-blip"}], 10, joins), [])
+
     def test_effects_too_close(self):
         errors = sfx.check([{"t": 1.0, "sound": "click"}, {"t": 3.0, "sound": "pop-blip"}])
         self.assertTrue(any("less than" in e for e in errors))
