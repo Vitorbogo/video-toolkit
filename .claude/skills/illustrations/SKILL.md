@@ -50,7 +50,9 @@ the flow either. Keep the pinned version: the Apache 2.0 license of 0.9.16 can't
    video preset measures `camera_crop` around the face. `slide_crop` is not used with `--panel`, but must fit in
    the frame. 👀 The preview goes to review as always.
 
-## Style (approved on 2026-11-05, "teste ilustração" video)
+## Default style
+
+The author's own style, if any, is in `profile/brand.md` ("Illustrations") and wins over this default.
 
 - Background `#141B2D` (the same as the video), cards `#1E2740` with border `#2C3757` and 22 px corners.
 - Poppins Bold and ExtraBold. Highlight in orange `#F5A623` (the same as the captions and the slide badge). Green

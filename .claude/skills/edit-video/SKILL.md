@@ -7,7 +7,9 @@ description: The agent's playbook for editing a video-toolkit video, from the re
 
 The author runs nothing: you run everything and stop at the **review checkpoints** (marked 👀) for them to decide. Exact commands and flags: the "Flow" block of `README.md` (read it before starting). This skill gives the order, when a step is done and the gotchas the code doesn't tell.
 
-`<name>` is a short nickname for the video (e.g. `instructions`). Every output goes to `videos/<name>/` (outside git). The original stays in the video's files folder given in `CLAUDE.local.md`; without it, ask where it is.
+`<name>` is a short nickname for the video (e.g. `instructions`). Every output goes to `videos/<name>/` (outside git). The original stays in the video's files folder given in `profile/recording.md`; with no folder there, ask where it is.
+
+**Author profile.** Before step 2, read `profile/recording.md` (setup, habits on camera, files), `profile/voice.md` (voice treatment) and `profile/brand.md` ("Look" for the preset, "Covers" for step 7). Their entries override this skill's defaults. No `profile/` yet: create it first (`profile.example/README.md`).
 
 **Languages.** Talk to the author in the language the author writes in. Captions, cover texts (`thumb.json`) and metadata are in the video's spoken language (`pt` or `en`, `"lang"` in `transcript.json`).
 
@@ -23,7 +25,7 @@ The author runs nothing: you run everything and stop at the **review checkpoints
 
 4. **Cuts.** Put the decisions in `videos/<name>/edit.json`, the single source of manual decisions: `replace` (caption fixes, works with several words), `cut`, `keep`, `trim`, `zoom`, `blur`, `lang` (keys and format: docstring of `src/vtk/cuts.py`). Run `cuts.py --video ... --name <name>`.
    - Check the `Language:` line at the top of `edit-plan.md` (language, why, filler list used). Wrong: set `"lang"` in `edit.json` and run again with `--force`.
-   - **Portuguese retakes** ("deixa eu falar de novo", restarting a sentence) are not detected by the engine (only English retake cues are): find them in the transcript and remove them with `cut`.
+   - **Portuguese retakes** (a spoken cue to start over, or a restarted sentence) are not detected by the engine (only English retake cues are): find them in the transcript, using the author's own cues in `profile/recording.md`, and remove them with `cut`.
    - **Sensitive data on screen** (chat titles, e-mails, client names, tabs): look at frames of the screen area throughout the video and cover it with `blur` (times and pixels of the original recording).
    - Zoom stays off; only if the author finds the jump cuts abrupt.
    - 👀 **Review 1:** show `edit-plan.md` (what was removed and why, warnings, possible retakes) and the caption text. A word you didn't understand: ask, never invent. Adjust `edit.json` and run again with `--force` until approved.
@@ -35,9 +37,9 @@ The author runs nothing: you run everything and stop at the **review checkpoints
 
 6. **Final.** `render.py` without `--scale`, into `videos/<name>/render`. Then `postaudio.py --preset videos/<name>/preset.json --in videos/<name>/render/final.mov --out videos/<name>/final.mp4` (with `--sfx videos/<name>/sfx.json` if there are effects). **Done when** `postaudio.py` ends with `ok` (-14 LUFS, peak ≤ -1.5 dBTP, `normalization_type=linear`).
 
-7. **Cover.** `face.py --video videos/<name>/final.mp4 --name <name>` and look at `face_candidates.jpg`. Write `thumb.json` (texts in the video's language, `"time_s": "auto"` and `"face_x": "auto"` in the variants) and run `thumb.py`. 👀 **Review 3:** show the covers in `videos/<name>/covers/` and wait for the variant choice: update `cover` in `meta.json` (without "PROVISIONAL"). **Done when** the cover is chosen.
+7. **Cover.** `face.py --video videos/<name>/final.mp4 --name <name>` and look at `face_candidates.jpg`. Write `thumb.json` (following `profile/brand.md` "Covers", texts in the video's language, `"time_s": "auto"` and `"face_x": "auto"` in the variants) and run `thumb.py`. 👀 **Review 3:** show the covers in `videos/<name>/covers/` and wait for the variant choice: update `cover` in `meta.json` (without "PROVISIONAL"). **Done when** the cover is chosen.
 
-8. **Publish.** Run `publish.py --name <name> --video videos/<name>/final.mp4` until it exits without `ERROR`. If `CLAUDE.local.md` gives a files folder for the video, copy `final.mp4`, the covers (`covers/`) and `publish.md` there, under the file names `CLAUDE.local.md` gives. **Done when** the files are copied (if there is a folder) and you delivered `publish.md`.
+8. **Publish.** Run `publish.py --name <name> --video videos/<name>/final.mp4` until it exits without `ERROR`. If `profile/recording.md` gives a files folder for the video, copy `final.mp4`, the covers (`covers/`) and `publish.md` there, under the file names it gives. **Done when** the files are copied (if there is a folder) and you delivered `publish.md`.
 
 ## Gotchas
 
@@ -48,17 +50,21 @@ The author runs nothing: you run everything and stop at the **review checkpoints
 - **The cover uses the final video at 1080×1920**, and so does `face.py`: run both on `final.mp4`, not on the preview.
 - **The caption highlights the spoken word** using `"wt"` from `plan.json` (start of each word). It is generated by `cuts.py`; an old plan without `"wt"` or a `replace` that changes the word count still works, with the time estimated from word length (it can be slightly off: check it in the preview).
 - **A piece that starts right after a hand `cut` can keep the tail of the cut word** (Parakeet's word end comes before the sound fades: a "-o" was audible on the "fluxo-de-trabalho" video). When the author hears a leftover syllable, measure the level around the join (RMS in 20 ms windows) and add a `trim` up to the silence before the next kept word, leaving ~0.05 s before its onset.
-- **Opening without speech (the author sitting down, a signature entrance):** the engine drops everything before
-  the first word. `"intro": t` in `edit.json` opens the video raw at `t`; leave ~0.3–0.4 s of empty frame before the
+- **Opening without speech (an entrance before the first word):** the engine drops everything before the first
+  word. If `profile/recording.md` lists an entrance, look for it on every video. `"intro": t` in `edit.json` opens the video raw at `t`; leave ~0.3–0.4 s of empty frame before the
   author shows up *inside the camera crop* (with a tight crop they appear later than in the full frame).
 - **Last words missing from the transcript:** Parakeet can drop the final words (on "grilling" it turned "eles ficam
   melhores" into "é que você ficou", ending 0.7 s early) and the last piece then cuts the speech. Measure the RMS
   after the last word; if there is speech, `"outro": t` ends the video there and `replace` fixes the caption.
-- **Camera-only recording:** the seated face sits low in the frame. Measure `camera_crop` on frames from the whole
-  video (leaning in and leaning back), not only the first ones, or the crop cuts the chin.
+- **Camera-only recording:** the face moves as the author leans in and back. Measure `camera_crop` on frames from
+  the whole video, not only the first ones, or the crop cuts the chin.
 - **Voice treatment:** `audio.eq` (`[[lowshelf|highshelf|peak, Hz, dB, q], ...]`) and `audio.exciter` (synthetic
-  air) in the video preset. No profile is decided yet: on "grilling" the author picked B2 (see its preset) after
-  comparing *full previews*, not 13 s samples (in short samples the B variants sounded the same). Offer the
-  comparison again on the next videos. Pitch shifting (asetrate + atempo) was rejected ("sounded awful").
+  air) in the video preset. Default: the voice untouched. The author's treatment is in `profile/voice.md`: copy its
+  values into the video's `preset.json`, and when its status is *testing*, offer the comparison again. Craft rules,
+  true for any voice:
+  - Compare variants as *full previews*: in 13 s samples the variants sound the same.
+  - Keep pitch natural: pitch shifting (asetrate + atempo) sounds awful.
+  - One low-end move is enough: adding density (a low-mid boost) on top of an EQ that already warms the voice
+    muddies it.
 - **Temporary files of yours:** `.mkv`/`.mp4`, never `.mov` (the guard blocks `rm` on any `.mov`).
 - **Changed a toolkit script?** Run `.venv/bin/python -m unittest discover tests` before going on.

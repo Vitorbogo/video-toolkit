@@ -46,7 +46,7 @@
     "audio_fade_out_s": 0.03
   },
   "subtitles": {
-    "_note": "drawn with Pillow (src/vtk/captions.py): whole sentence, spoken word in 'highlight' (the orange of the slides' badge). Style A, chosen on 2026-11-05. font_file relative to the root.",
+    "_note": "drawn with Pillow (src/vtk/captions.py): whole sentence, spoken word in 'highlight'. font_file relative to the root.",
     "font_file": "assets/fonts/Poppins-ExtraBold.ttf",
     "size": 62,
     "outline": 5,
@@ -58,7 +58,7 @@
     "outline_color": "#141B28"
   },
   "audio": {
-    "_note": "measured on the 1st video: voice ~-24 dB, background ~-61 dB, 37 dB of headroom. Noise reduction OFF: with the microphone used, afftdn made the voice robotic (2nd video). 2:1 compressor from the setting used in that video. Only turn denoise on if background noise shows up, comparing before/after. pre_limiter 'auto': postaudio computes the limit that keeps loudnorm linear (the old 1.0 did nothing and loudnorm fell back to dynamic mode). tp_margin_db: peak headroom for AAC; the final limiter sits at TP - tp_margin_db and the result is measured.",
+    "_note": "Noise reduction OFF by default: afftdn can make a clean voice robotic. Only turn denoise on if background noise shows up, comparing before/after. Gentle 2:1 compressor. Voice EQ/exciter: none by default; the author's treatment is in profile/voice.md. pre_limiter 'auto': postaudio computes the limit that keeps loudnorm linear (the old 1.0 did nothing and loudnorm fell back to dynamic mode). tp_margin_db: peak headroom for AAC; the final limiter sits at TP - tp_margin_db and the result is measured.",
     "highpass_hz": 80,
     "denoise": {
       "enabled": false,
