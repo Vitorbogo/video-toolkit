@@ -31,6 +31,8 @@ Which sounds the author approved or rejected, and how much they like effects at 
    if it covers the speech.
 3. Write `videos/<name>/sfx.json`: `[{"t": 11.05, "sound": "whoosh-short"}, ...]`. `t` is the moment the sound
    hits (for the whoosh, the cut). `vol` is optional; the catalog default already sits under the voice.
+   At a J-cut (`marks` prints "J-cut: picture changes at ...") the cut you see is that later time, not the segment
+   start; and a J-cut is already the transition of that join, so it usually takes no whoosh.
 4. `python3 src/vtk/sfx.py check --sfx videos/<name>/sfx.json --plan videos/<name>/plan.json`.
 5. Show the list to the author together with the cuts review, with the sentence for each moment. They approve or
    remove.

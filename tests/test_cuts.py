@@ -33,8 +33,9 @@ def invariants(tc, plan, fps=30.0):
         for x0, x1, t in c["ev"]:
             tc.assertTrue(0 <= x0 < x1 <= d + 1e-6, (x0, x1, t, d))
         tc.assertLessEqual(c.get("z", 1), 1.2)
+        borrowed = plan[k + 1]["j"][0] if k + 1 < len(plan) and plan[k + 1].get("j") else 0.0  # J-cut footage
         for b in c.get("blur", []):
-            tc.assertTrue(0 <= b[0] < b[1] <= d + 1e-6 and len(b) == 6, (b, d))
+            tc.assertTrue(0 <= b[0] < b[1] <= d + borrowed + 1e-6 and len(b) == 6, (b, d))
 
 
 def decide(tc, ws, edit=None, lang="pt", **kw):

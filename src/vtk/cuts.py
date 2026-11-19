@@ -26,20 +26,28 @@ replace, extra_fillers...) and ours (trim, zoom, blur, lang):
                             e.g. the author sitting down); only moves the first piece's start earlier
   "outro": 65.6             the video ends at this time, raw (speech the transcript missed, a closing beat);
                             only moves the last piece's end later
+  "jcut": [[t, 0.25, "both", "note"]]  J-cut at the join nearest t: the next piece's voice starts 0.25 s (voice
+                            before picture, from its first word) before its picture. Area "both", "slide" (only the
+                            slide/screen waits) or "camera" (only the camera waits). Length and area are optional:
+                            left out, src/vtk/jcut.py picks them per join (0.25 at a sentence end, 0.6 at a topic
+                            change; camera only when the slide changes and the next words point at it). Checked
+                            against its craft rules (silent gap, mouth closed, enough footage): shortened or skipped
+                            with a warning. Joins that could take one are listed in edit-plan.md with that choice.
 Every manual decision goes in edit.json: --force rebuilds plan.json without losing anything (a repeated caption
 fix goes in "replace"). The language's fillers (presets/fillers-<lang>.json) always apply; edit.json's add to them.
 Automatic zoom is optional and OFF: use --zoom only when the jump cuts feel abrupt. With it, the skill's rule
 (alternate zoom/no zoom at cuts of 1 s or more, or after 4 s on the same framing) sets "z" on the pieces; edit.json's
 "zoom" goes on top.
 
-plan.json: [{"s", "e", "ev": [[x0, x1, "text"]], "wt": [[start of each word]], "z"?, "blur"?: [[t0, t1, x, y, w, h]]}];
-s/e on the frame, ev and blur relative to s.
+plan.json: [{"s", "e", "ev": [[x0, x1, "text"]], "wt": [[start of each word]], "z"?, "blur"?: [[t0, t1, x, y, w, h]],
+"j"?: [lead, area]}]; s/e on the frame, ev and blur relative to s. "j" = J-cut into this piece (render.py).
 """
 import argparse, json, math, os, re, shutil, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 from vtk import engine as ev
+from vtk import jcut
 from vtk import lang as lng
 from vtk import preset
 
@@ -212,11 +220,13 @@ def captions(ws, d, max_chars, rep, lp):
 
 
 def decide(words, edit, total, fps=30.0, db=(), floor=-60.0, blacks=(), scenes=(), max_chars=60, zoom=0,
-           warnings=None, *, lang):
+           warnings=None, *, lang, mouth=None, jcuts=None):
     """Returns (plan, removed, possible_retakes). Times of 'removed' and 'possible_retakes' in the original recording.
     zoom > 1 turns on the skill's zoom suggestion (camera only, in render.py); 0 leaves every piece unzoomed.
     lang = spoken language (main() resolves it): its preset's 'fillers' and 'extra_fillers' are merged with edit.json's;
-    the skill's other keys go straight to it. 'warnings' (list) gets what needs review."""
+    the skill's other keys go straight to it. 'warnings' (list) gets what needs review.
+    mouth = jcut.mouth_meter(...) (None: not measured, camera J-cuts refused); 'jcuts' (dict) gets "applied"
+    [(join, V, area, note)] and "candidates" [(join, time, max V)] for edit-plan.md."""
     warnings = [] if warnings is None else warnings
     lang_preset = lng.load(lang)
     spec = {**edit, **{k: lang_preset[k] + [x for x in edit.get(k, []) if x not in lang_preset[k]] for k in ("fillers", "extra_fillers")}}
@@ -278,12 +288,19 @@ def decide(words, edit, total, fps=30.0, db=(), floor=-60.0, blacks=(), scenes=(
         if c is None: warnings.append(f"zoom at {t} s: outside the kept pieces"); continue
         c.pop("z", None)
         if z > 1: c["z"] = round(min(MAX_ZOOM, z), 3)
+    ctx = {"kept": [(w["start"], w["end"]) for w, r in zip(words, reason) if r is None], "scenes": list(scenes),
+           "pointing": lang_preset["pointing_words"]}
+    applied = jcut.apply(plan, spec.get("jcut", []), removed, fps, mouth, warnings, **ctx)
+    if jcuts is not None:
+        jcuts["applied"], jcuts["candidates"] = applied, jcut.candidates(plan, removed, fps, mouth, **ctx)
+    # a piece followed by a J-cut shows footage past its end: its blur covers that too
+    ends = [c["e"] + (max(0.0, nx["j"][0]) if nx.get("j") else 0.0) for c, nx in zip(plan, plan[1:] + [{}])]
     for it in spec.get("blur", []):
         t0, t1, box = float(it[0]), float(it[1]), list(it[2:6])
-        hit = [c for c in plan if min(t1, c["e"]) - max(t0, c["s"]) > 0.001]
+        hit = [(c, e) for c, e in zip(plan, ends) if min(t1, e) - max(t0, c["s"]) > 0.001]
         if not hit: warnings.append(f"blur {t0}-{t1}: outside the kept pieces")
-        for c in hit:
-            d = round(c["e"] - c["s"], 6)
+        for c, e in hit:
+            d = round(e - c["s"], 6)
             c.setdefault("blur", []).append([round(max(0.0, t0 - c["s"]), 3), min(round(t1 - c["s"], 3), d)] + box)
     return plan, removed, maybe
 
@@ -325,8 +342,9 @@ def mmss(t):
     return f"{int(t // 60)}:{t % 60:04.1f}"
 
 
-def report(plan, removed, maybe, total, warnings=(), lang=None):
-    """edit-plan.md. lang = (code, why) shown at the top, so the reviewer sees which filler list was used."""
+def report(plan, removed, maybe, total, warnings=(), lang=None, jcuts=None):
+    """edit-plan.md. lang = (code, why) shown at the top, so the reviewer sees which filler list was used.
+    jcuts = decide()'s {"applied", "candidates"}."""
     dur = sum(c["e"] - c["s"] for c in plan)
     wpm = sum(len(t.split()) for t in caption_texts(plan)) / max(1.0, dur) * 60
     o = [f"# Cut plan\n\n{ev.stamp(total)} -> {ev.stamp(dur)} ({(total - dur) / total * 100:.0f}% shorter), "
@@ -342,6 +360,16 @@ def report(plan, removed, maybe, total, warnings=(), lang=None):
     if zoomed:
         o.append("## Camera zoom (optional: to remove it, \"zoom\": [[t, 1]] in edit.json, which survives --force)\n")
         o += [f"- piece {i} ({ev.stamp(c['s'])}): {c['z']:g}x" for i, c in zoomed] + [""]
+    jc = jcuts or {}
+    if jc.get("applied"):
+        o.append("## J-cuts (voice before picture; judge them on the preview)\n")
+        o += [f"- {ev.stamp(plan[n]['e'])}, into piece {n + 1}: voice {v:.2f} s before the picture, {area} ({why})"
+              for n, v, area, why in jc["applied"]] + [""]
+    if jc.get("candidates"):
+        o.append("## J-cut candidates (not applied: silent gap, sentence end, mouth closed. "
+                 "To try one: \"jcut\": [[t]] in edit.json, then judge it on the preview)\n")
+        o += [f"- t = {t:.2f} ({ev.stamp(t)}), into piece {n + 1}: {v:.2f} s of voice before the picture, {area} ({why})"
+              for n, t, v, area, why in jc["candidates"]] + [""]
     if maybe:
         o.append("## Possible retakes (not cut: decide and put them in \"cut\" in edit.json)\n")
         o += [f"- {ev.stamp(t)}: \"{a[:90]}\" then \"{b[:90]}\"" for t, a, b in maybe] + [""]
@@ -379,13 +407,14 @@ def main():
     db, floor = ev.audio_energy(a.video)
     blacks, scenes = ev.visual_events(a.video)
     if a.no_scenes: scenes = []
-    warnings = []
+    warnings, jcuts = [], {}
+    mouth = jcut.mouth_meter(a.video, P["source"]["camera_crop"], warnings)
     plan, removed, maybe = decide(words, edit, total, fps, db, floor, blacks, scenes, P["subtitles"]["max_chars_per_event"],
-                                  zoom=a.zoom, warnings=warnings, lang=lang)
+                                  zoom=a.zoom, warnings=warnings, lang=lang, mouth=mouth, jcuts=jcuts)
     bak = os.path.exists(pp)
     if bak: shutil.copyfile(pp, pp + ".bak")
     write_text(pp, json.dumps(plan, ensure_ascii=False, indent=1))
-    md = report(plan, removed, maybe, total, warnings, (lang, why))
+    md = report(plan, removed, maybe, total, warnings, (lang, why), jcuts)
     write_text(os.path.join(vdir, "edit-plan.md"), md)
     print(md.splitlines()[2])
     print(f"ok: {os.path.relpath(pp, ROOT)} and edit-plan.md" + (" (the previous one is in plan.json.bak)" if bak else "")

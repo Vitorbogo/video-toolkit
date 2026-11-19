@@ -23,7 +23,7 @@ The author runs nothing: you run everything and stop at the **review checkpoints
 
 3. **Transcribe** (`transcribe_words.py --video ... --name <name>`) and read the whole `transcript.txt`. Note wrong terms (Parakeet turns "IA" into "Ya", tool names). Check the detected language (printed as `language: ...` and in `"lang"` of `transcript.json`): if it is wrong or missing (`null`: short text, mixed speech), set `"lang"` in `edit.json`. **Done when** you read everything, the language is right, and you have the list of fixes and of words you didn't understand.
 
-4. **Cuts.** Put the decisions in `videos/<name>/edit.json`, the single source of manual decisions: `replace` (caption fixes, works with several words), `cut`, `keep`, `trim`, `zoom`, `blur`, `lang` (keys and format: docstring of `src/vtk/cuts.py`). Run `cuts.py --video ... --name <name>`.
+4. **Cuts.** Put the decisions in `videos/<name>/edit.json`, the single source of manual decisions: `replace` (caption fixes, works with several words), `cut`, `keep`, `trim`, `zoom`, `blur`, `lang`, `jcut` (keys and format: docstring of `src/vtk/cuts.py`). Run `cuts.py --video ... --name <name>`.
    - Check the `Language:` line at the top of `edit-plan.md` (language, why, filler list used). Wrong: set `"lang"` in `edit.json` and run again with `--force`.
    - **Portuguese retakes** (a spoken cue to start over, or a restarted sentence) are not detected by the engine (only English retake cues are): find them in the transcript, using the author's own cues in `profile/recording.md`, and remove them with `cut`.
    - **Sensitive data on screen** (chat titles, e-mails, client names, tabs): look at frames of the screen area throughout the video and cover it with `blur` (times and pixels of the original recording).
@@ -31,9 +31,12 @@ The author runs nothing: you run everything and stop at the **review checkpoints
    - 👀 **Review 1:** show `edit-plan.md` (what was removed and why, warnings, possible retakes) and the caption text. A word you didn't understand: ask, never invent. Adjust `edit.json` and run again with `--force` until approved.
    - In the same review, propose the **sound effects** (skill `sound-effects`, `videos/<name>/sfx.json`) and, if the video lacks visual content or when asked, the **illustrations** (skill `illustrations`). Each item with the sentence where it goes.
    - Right after approval, write `meta.json` (skill `publish-video`).
+   - **J-cuts** (the next piece's voice starts before its picture; see the gotcha), if `profile/brand.md` uses them:
+     pick joins from "J-cut candidates" in `edit-plan.md`, put them in `"jcut"` in `edit.json` (just `[t]`: length and
+     area are chosen per join) and run again with `--force`. They are judged on the preview, not in this table.
    **Done when** cuts and captions are approved.
 
-5. **Preview** (`render.py ... --out videos/<name>/render_prev --scale 0.5 --crf 30`, plus `--panel videos/<name>/illustration.mp4` if there is an illustration). It comes out at `render_prev/final.mov`. Look at a few frames (blur in place, caption whole inside the screen, face framed). 👀 **Review 2:** give the preview path so it can be watched with headphones. **Done when** the preview is approved; changes go back to `edit.json` (step 4).
+5. **Preview** (`render.py ... --out videos/<name>/render_prev --scale 0.5 --crf 30`, plus `--panel videos/<name>/illustration.mp4` if there is an illustration). It comes out at `render_prev/final.mov`. Look at a few frames (blur in place, caption whole inside the screen, face framed; inside each J-cut lead, a closed mouth). 👀 **Review 2:** give the preview path so it can be watched with headphones, with the time of each J-cut (`sfx.py marks` prints them) so the author judges each one. **Done when** the preview is approved; changes go back to `edit.json` (step 4).
 
 6. **Final.** `render.py` without `--scale`, into `videos/<name>/render`. Then `postaudio.py --preset videos/<name>/preset.json --in videos/<name>/render/final.mov --out videos/<name>/final.mp4` (with `--sfx videos/<name>/sfx.json` if there are effects). **Done when** `postaudio.py` ends with `ok` (-14 LUFS, peak ≤ -1.5 dBTP, `normalization_type=linear`).
 
@@ -66,5 +69,24 @@ The author runs nothing: you run everything and stop at the **review checkpoints
   - Keep pitch natural: pitch shifting (asetrate + atempo) sounds awful.
   - One low-end move is enough: adding density (a low-mid boost) on top of an EQ that already warms the voice
     muddies it.
+- **J-cut (split edit):** at a join, the next piece's voice starts before its picture; the picture of the piece
+  before runs on into footage the cut removed. Sound never moves; only the picture edit point does
+  (`src/vtk/jcut.py`, `"j"` in `plan.json`). Craft rules, true for any author:
+  - Only over a removed **silence** at a sentence end. Over a removed filler or retake the borrowed footage shows the
+    mouth forming other words, which reads as a dubbing error. `cuts.py` refuses those joins.
+  - **Silence in the audio is not a closed mouth.** On the first test, 4 of 6 "silent" joins had the mouth opening
+    before the next word (getting ready to speak). `cuts.py` measures the mouth (MediaPipe) and caps the lead there;
+    without MediaPipe a camera J-cut is refused.
+  - **Length is measured as voice-before-picture, from the next piece's first word**, not from the cut: the engine
+    already leaves a beat of silence there, so a lead measured from the cut is mostly silence and looks like a hard
+    cut. Pick it per join: ~0.25 s at a normal sentence end (continuity without calling attention), ~0.6 s only at a
+    topic change (`cuts.py` uses a 3 s speech gap, like the engine's long_gap) and only when the mouth stays closed
+    for all of it; otherwise fall back to 0.25 s; under 0.2 s skip the join (no frozen frame). `cuts.py` makes this
+    choice when `"jcut"` gives only `[t]`; a length in `edit.json` overrides it.
+  - **When the slide changes at the join and the next words point at the screen** ("olha", "look"), the screen must
+    change with the voice: only the camera waits (`"camera"`). `cuts.py` picks that from `pointing_words` in
+    `presets/fillers-<lang>.json`.
+  - One transition per join: a J-cut takes no whoosh or zoom punch-in on the same join.
+  - Approve J-cuts on the preview, never from `edit-plan.md`: nobody can judge one from a table.
 - **Temporary files of yours:** `.mkv`/`.mp4`, never `.mov` (the guard blocks `rm` on any `.mov`).
 - **Changed a toolkit script?** Run `.venv/bin/python -m unittest discover tests` before going on.
