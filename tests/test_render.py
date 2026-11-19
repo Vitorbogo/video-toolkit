@@ -44,15 +44,33 @@ class Frames(unittest.TestCase):
         with self.assertRaises(SystemExit):
             render.check_plan([dict(SEG, blur=[[0, 1, 0, 0, 10]])], 30)
 
-    def test_command_has_exact_frames_and_audio(self):
+    def test_clip_is_picture_only_with_exact_frames(self):
         cmd = render.clip_cmd(SEG, 45, 1.0, P, (2518, 1726), "", 0.5, "30", "/v.mov", ("/o/c00-cap.txt", 100), "/o/c00.mov.part")
         self.assertLess(cmd.index("-ss"), cmd.index("-i"))
         self.assertEqual(cmd[cmd.index("-frames:v") + 1], "45")
-        self.assertEqual(cmd[cmd.index("-c:a") + 1], "pcm_s16le")
+        self.assertIn("-an", cmd)
         fg = cmd[cmd.index("-filter_complex") + 1]
-        self.assertIn("atrim=end_sample=72000,apad=whole_len=72000", fg)  # 45/30 s a 48 kHz
-        self.assertIn("afade=t=out:st=1.4700:d=0.03", fg)
+        self.assertNotIn("[0:a", fg)
         self.assertIn("scale=540:", fg)  # --scale 0.5
+        self.assertEqual(cmd.count("-i"), 2)  # recording + captions
+
+    def test_slide_from_another_moment_is_a_second_input(self):
+        c = dict(SEG, ss=3.25, bs=[[0, 0.5, 0, 0, 10, 10]], blur=[[0, 0.5, 20, 20, 10, 10]])
+        cmd = render.clip_cmd(c, 45, 1.0, P, (2518, 1726), "", 1.0, "30", "/v.mov", ("/o/c00-cap.txt", 100), "/o/c00.mov.part")
+        self.assertEqual(cmd.count("-i"), 3)
+        self.assertEqual(cmd[cmd.index("-i", cmd.index("-i", cmd.index("-i") + 1) + 1) - 3], "3.2500")
+        fg = cmd[cmd.index("-filter_complex") + 1]
+        self.assertIn("[2:v]", fg)
+        self.assertIn("[bls1]crop=", fg)  # the slide's own blur, labels apart from the camera's
+        self.assertIn("[bl1]crop=", fg)
+
+    def test_sound_track_has_exact_samples_and_fades(self):
+        cmd = render.sound_cmd([SEG, dict(SEG, s=4.0, e=5.0)], [45, 30], P, "/v.mov", "/o/sound.wav")
+        self.assertEqual(cmd.count("-i"), 2)
+        fg = cmd[cmd.index("-filter_complex") + 1]
+        self.assertIn("atrim=end_sample=72000,apad=whole_len=72000", fg)  # 45/30 s at 48 kHz
+        self.assertIn("afade=t=out:st=1.4700:d=0.03", fg)
+        self.assertIn("[a0][a1]concat=n=2:v=0:a=1[a]", fg)
 
 
 class Crops(unittest.TestCase):
@@ -121,9 +139,11 @@ class Resume(unittest.TestCase):
                     self.h(c=dict(SEG, blur=[[0, 1, 0, 0, 10, 10]])), self.h(cam=",eq"), self.h(scale=0.5),
                     self.h(crf="30"), self.h(P=preset.merge(P, {"subtitles": {"size": 70}})),
                     self.h(P=preset.merge(P, {"source": {"camera_crop": [1, 2, 3, 4]}})),
-                    self.h(P=preset.merge(P, {"cut": {"audio_fade_out_s": 0.05}}))]
+                    self.h(c=dict(SEG, ss=3.0)), self.h(c=dict(SEG, ss=3.0, bs=[[0, 1, 0, 0, 10, 10]]))]
         self.assertEqual(len(set(changes + [base])), len(changes) + 1)
-        self.assertEqual(base, self.h(P=preset.merge(P, {"source": {"_note": "other"}, "audio": {"limiter": 0.5}})))
+        # sound lives in sound.wav now: the fades don't touch the picture clips
+        self.assertEqual(base, self.h(P=preset.merge(P, {"source": {"_note": "other"}, "audio": {"limiter": 0.5},
+                                                         "cut": {"audio_fade_out_s": 0.05}})))
         os.utime(self.video, (1, 1))
         self.assertNotEqual(base, self.h())
 

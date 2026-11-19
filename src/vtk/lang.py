@@ -42,7 +42,7 @@ def load(code):
     lower = lambda k: [w.lower() for w in p.get(k, [])]
     return {"lang": code, "fillers": lower("fillers"), "extra_fillers": lower("extra_fillers"),
             "short_words": frozenset(lower("short_words")), "break_before": frozenset(lower("break_before")),
-            "function_words": frozenset(lower("function_words"))}
+            "function_words": frozenset(lower("function_words")), "pointing_words": frozenset(lower("pointing_words"))}
 
 
 def clean(word):

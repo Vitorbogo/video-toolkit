@@ -11,7 +11,7 @@ creates it from the `profile.example/` template on the first video.
 
 | Folder | What it holds |
 |--------|---------------|
-| `src/vtk/` | Our scripts: `engine.py` (cut engine: per-word timing, fillers, repeats, punch-ins; started as a copy of the dev-video-editing skill, MIT, see `THIRD_PARTY_LICENSES.md`), `transcribe_words.py` (per-word timing, free), `cuts.py` (cuts through `engine.py` → `plan.json`), `lang.py` (spoken language: presets and detection), `render.py` (captions drawn by `captions.py`), `postaudio.py` (sound effects with `--sfx`), `sfx.py` (sound effect library and per-video list), `face.py` (frames with a neutral face for the cover), `thumb.py`, `publish.py` (publishing metadata), `preset.py` (loads a preset with inheritance). |
+| `src/vtk/` | Our scripts: `engine.py` (cut engine: per-word timing, fillers, repeats, punch-ins; started as a copy of the dev-video-editing skill, MIT, see `THIRD_PARTY_LICENSES.md`), `transcribe_words.py` (per-word timing, free), `cuts.py` (cuts through `engine.py` → `plan.json`), `lang.py` (spoken language: presets and detection), `jcut.py` (J-cuts: picture timeline, rules, mouth check), `render.py` (captions drawn by `captions.py`), `postaudio.py` (sound effects with `--sfx`), `sfx.py` (sound effect library and per-video list), `face.py` (frames with a neutral face for the cover), `thumb.py`, `publish.py` (publishing metadata), `preset.py` (loads a preset with inheritance). |
 | `models/` | Transcription (487 MB) and face (3.7 MB) models, **outside git**. See below. |
 | `presets/` | Per-format parameters (layout, cuts, captions, audio, image), covers (`thumbnail.json`), fillers per language (`fillers-pt.json`, `fillers-en.json`), platform limits (`publish.json`) and the illustration example (`illustration/`). |
 | `assets/fonts/` | Poppins (captions and covers, SIL OFL 1.1, `OFL-Poppins.txt`). |
@@ -70,6 +70,9 @@ python3 src/vtk/cuts.py --video RECORDING.mov --name <name> [--zoom] [--no-scene
 #      lang "en"                     spoken language, when detection gets it wrong or can't tell
 #      intro 6.2                     the video opens at this time, raw (e.g. the author sitting down before speaking)
 #      outro 65.6                    the video ends at this time, raw (speech the transcript missed, a closing beat)
+#      jcut [[t]]                    J-cut at the join nearest t: the next piece's voice starts before its picture
+#                                    ([t, 0.6, "slide"] sets length and area; left out, cuts.py picks them per join).
+#                                    Joins that can take one: "J-cut candidates" in edit-plan.md (mouth checked)
 #      style, pauses, extra_fillers  engine.py keys
 #    zoom is optional and off: only if the jump cuts feel abrupt (--zoom suggests, edit.json decides)
 #    --no-scenes ignores slide changes when placing cuts
@@ -81,7 +84,8 @@ python3 src/vtk/sfx.py marks --plan videos/<name>/plan.json     # times in the f
 python3 src/vtk/sfx.py check --sfx videos/<name>/sfx.json --plan videos/<name>/plan.json
 # 2c. illustrations (skill illustrations), only when the video lacks visual content or when asked
 # 3. preview and final: resumes where it stopped and redoes only the clips whose segment, preset or options changed
-#    output: render/c00.mov... (PCM audio, no drift at the joins), render/list.txt and, when all are ready, render/final.mov
+#    output: render/c00.mov... (picture only, cut at the picture edit points), render/sound.wav (the sound track,
+#    PCM, cut at the plan's pieces), render/list.txt and, when all are ready, render/final.mov (no drift at the joins)
 python3 src/vtk/render.py --preset videos/<name>/preset.json --video RECORDING.mov \
   --plan videos/<name>/plan.json --out videos/<name>/render_prev --scale 0.5 --crf 30
 python3 src/vtk/render.py --preset videos/<name>/preset.json --video RECORDING.mov \
@@ -147,6 +151,9 @@ presets by file name. The language must be one Parakeet TDT v3 transcribes.
 - [x] `engine.py` wired to `render.py` through `cuts.py` (used on the "especialista" and "instrucoes" videos)
   - Our decision on top of the original engine: it leaves a "breath" in place of the removed filler, and a bit of its sound stayed audible. `cuts.py` removes that bit too, but doesn't cut if the join would be shorter than 0.12 s or leave a piece with less than 0.4 s of speech (the word goes back to the caption). `edit-plan.md` is rebuilt from the final pieces
 - [x] Portuguese filler list (`presets/fillers-pt.json`, applied by `cuts.py`)
+- [x] J-cuts (issue #8): sound and picture rendered apart, so a join can bring the next voice in before its picture.
+  `cuts.py` refuses joins over a filler/retake, measures the mouth in the borrowed footage, picks length and area per
+  join and lists candidates. Tested on 6 real joins (2026-11-19), approved by the author on the preview
 - [x] English support: `presets/fillers-en.json`, language detection (`lang.py`) and `"lang"` override. Covered by tests; not yet used on a real English video
 - [x] Short pauses instead of deleted ones (the engine shortens them to a breath)
 - [x] Joins without audio drift: clips with PCM audio and an exact frame duration, joined by `render.py` itself

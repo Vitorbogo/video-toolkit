@@ -5,11 +5,16 @@ Usage:
   python3 src/vtk/render.py --preset presets/tiktok-vertical.json --video RECORDING.mov \
       --plan videos/<name>/plan.json --out render_final --scale 1.0 --crf 20
   # light preview: --scale 0.5 --crf 30
-Outputs in --out: c00.mov, c01.mov... (one clip per segment, PCM 48 kHz audio), list.txt and, when all
-clips are ready, final.mov (joined without re-encoding). Then: vtk/postaudio.py --in <out>/final.mov.
+Outputs in --out: c00.mov, c01.mov... (picture only, one clip per piece of the PICTURE timeline), sound.wav (the
+whole sound track, PCM 48 kHz), list.txt and, when all clips are ready, final.mov (clips joined without re-encoding,
+plus sound.wav). Then: vtk/postaudio.py --in <out>/final.mov.
 
-Frame grid: each clip has exactly round((e - s) * fps) frames and audio of the same duration, so the
-joins don't accumulate drift between sound and picture (that's why PCM, not AAC, in the clips).
+Sound and picture are built apart. The plan's segments are the sound timeline: sound.wav is each segment's audio,
+exactly round((e - s) * fps) frames long, with a short fade at each end, joined. The picture timeline has the same
+total length; it is one clip per segment unless a segment has a J-cut ("j": [lead, area], src/vtk/jcut.py): then
+the camera and/or slide switch to that segment `lead` seconds after its sound starts, and the clips are cut at those
+picture edit points. Captions follow the sound (sliced from the sound timeline into each clip). Frame grid: every
+clip and every sound piece is a whole number of frames, so nothing drifts at the joins.
 
 Resumes where it stopped: each clip has a cNN.json with the hash of everything that affects it (segment, preset
 blocks, camera filter, --scale, --crf, recording file). If anything changed, the clip is redone. --budget limits the
@@ -23,7 +28,8 @@ cropped slide. It is in FINAL video time (after the cuts) and scaled to layout.s
 still checked). Panel shorter than the video: freezes on the last frame.
 
 Blur (optional): "blur": [[t0, t1, x, y, w, h], ...] in the segment blurs the x/y/w/h box (pixels of the original
-recording) between t0 and t1 (seconds from the segment start), before cropping camera and slide.
+recording) between t0 and t1 (seconds from the segment start, may go past its end: footage a J-cut borrows), before
+cropping camera and slide.
 
 Before rendering, checks the recording (ffprobe): resolution equal to the preset's source.w/h (when present) and
 crops/boxes inside the frame.
@@ -37,12 +43,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 if os.path.join(ROOT, "src") not in sys.path:
     sys.path.insert(0, os.path.join(ROOT, "src"))
 from vtk import preset
-from vtk import captions, engine
+from vtk import captions, engine, jcut
 
 EYE_LINE = engine.EYE_LINE  # same eye line as engine.py: zoom grows from it
 MAX_ZOOM = 1.2  # above this the zoom is too noticeable
 AR = 48000  # clip audio: 16-bit PCM, 48 kHz
-VERSION = 3  # changes when the way of rendering changes: forces the clips to be redone
+VERSION = 4  # changes when the way of rendering changes: forces the clips to be redone
 CLIP_RE = re.compile(r"^c(\d+)\.(mov|mov\.part|json|ass|mp4|z)$")
 CAPTION_RE = re.compile(r"^c(\d+)-cap[-.]")
 
@@ -113,9 +119,9 @@ def probe(video):
     return int(m.group(1)), int(m.group(2))
 
 
-def blur_graph(boxes, size, src="v0"):
+def blur_graph(boxes, size, src="v0", tag=""):
     """Blur of the [t0, t1, x, y, w, h] boxes over the recording, before the crops.
-    Returns (filter_complex fragment ending in ';', output label)."""
+    Returns (filter_complex fragment ending in ';', output label). tag keeps two chains' labels apart."""
     W, H = size; g = []; cur = src
     for i, (t0, t1, x, y, w, h) in enumerate(boxes):
         # even box (yuv420), only growing outwards: covers at least what was asked
@@ -124,9 +130,9 @@ def blur_graph(boxes, size, src="v0"):
         bw, bh = x1 - x0, y1 - y0
         sigma = min(100, max(10, min(bw, bh) // 3))
         en = f"enable='between(t,{t0:g},{t1:g})'"
-        nxt = f"bl{i + 1}"
-        g.append(f"[{cur}]split=2[bm{i}][bc{i}];[bc{i}]crop={bw}:{bh}:{x0}:{y0},gblur=sigma={sigma}:steps=3[bk{i}];"
-                 f"[bm{i}][bk{i}]overlay={x0}:{y0}:{en}[{nxt}];")
+        nxt = f"bl{tag}{i + 1}"
+        g.append(f"[{cur}]split=2[bm{tag}{i}][bc{tag}{i}];[bc{tag}{i}]crop={bw}:{bh}:{x0}:{y0},gblur=sigma={sigma}:steps=3[bk{tag}{i}];"
+                 f"[bm{tag}{i}][bk{tag}{i}]overlay={x0}:{y0}:{en}[{nxt}];")
         cur = nxt
     return "".join(g), cur
 
@@ -136,9 +142,9 @@ def clip_hash(c, z, P, cam_extra, scale, crf, video, panel=None):
     clean = lambda d: {k: v for k, v in d.items() if not k.startswith("_")}
     st = os.stat(video)
     data = {"v": VERSION, "s": c["s"], "e": c["e"], "ev": c["ev"], "wt": c.get("wt"), "z": z, "blur": c.get("blur", []),
+            "ss": c.get("ss"), "bs": c.get("bs", []),
             "canvas": clean(P["canvas"]), "source": clean(P["source"]), "layout": P["layout"],
             "subtitles": clean(P["subtitles"]),
-            "fade": [P["cut"]["audio_fade_in_s"], P["cut"]["audio_fade_out_s"]],
             "cam": cam_extra, "scale": scale, "crf": str(crf),
             "video": [video, st.st_size, int(st.st_mtime)]}
     if panel:  # (file, start in the final video): the illustration changed or the segment moved in the timeline
@@ -147,36 +153,84 @@ def clip_hash(c, z, P, cam_extra, scale, crf, video, panel=None):
 
 
 def clip_cmd(c, nq, z, P, size, cam_extra, scale, crf, video, caption, out, panel=None):
-    """caption = (concat list with the caption PNGs, strip height), from captions.overlay.
-    panel = (illustration video, start of this segment in the final video) or None: in place of the cropped slide."""
-    # ffmpeg command for a clip with exactly nq frames and nq/fps seconds of audio.
+    """Picture-only clip of nq frames. c = {"s": camera source start, "ev", "wt", "blur"} plus, when the slide comes
+    from another moment of the recording (J-cut on one area only), "ss" (slide source start) and "bs" (its blur).
+    caption = (concat list with the caption PNGs, strip height), from captions.overlay.
+    panel = (illustration video, start of this clip in the final video) or None: in place of the cropped slide."""
     even = lambda x: int(round(x * scale / 2)) * 2
-    cv, L, S, cut = P["canvas"], P["layout"], P["source"], P["cut"]
+    cv, L, S = P["canvas"], P["layout"], P["source"]
     fps = cv["fps"]; W, H = even(cv["w"]), even(cv["h"])
     cam_h, cam_y = even(L["camera"]["h"]), even(L["camera"]["y"])
     sl_w, sl_h, sl_x, sl_y = (even(L["slide"][k]) for k in ("w", "h", "x", "y"))
     sw, sh, sx, sy = S["slide_crop"]
     cw, ch, cx, cy = zoom_crop(S["camera_crop"], z)
     bg, src = blur_graph(c.get("blur", []), size)
-    D = nq / fps; ns = round(D * AR); fi, fo = cut["audio_fade_in_s"], cut["audio_fade_out_s"]
+    D = nq / fps
+    apart = not panel and c.get("ss") is not None and abs(c["ss"] - c["s"]) > 1e-4
+    grab = lambda: f"setpts=PTS-STARTPTS,fps={fps},tpad=stop_mode=clone:stop_duration=1"
+    if panel:
+        slide = f"[{src}]crop={cw}:{ch}:{cx}:{cy},scale={W}:{cam_h}{cam_extra}[cam];" \
+                f"[2:v]{grab()},scale={sl_w}:{sl_h}[sl];"
+    elif apart:  # slide from another moment of the recording: its own input and its own blur
+        bs, ssrc = blur_graph(c.get("bs", []), size, "w0", "s")
+        slide = f"[{src}]crop={cw}:{ch}:{cx}:{cy},scale={W}:{cam_h}{cam_extra}[cam];" \
+                f"[2:v]{grab()}[w0];{bs}[{ssrc}]crop={sw}:{sh}:{sx}:{sy},scale={sl_w}:{sl_h}[sl];"
+    else:
+        slide = f"[{src}]split=2[a][b];" \
+                f"[a]crop={cw}:{ch}:{cx}:{cy},scale={W}:{cam_h}{cam_extra}[cam];" \
+                f"[b]crop={sw}:{sh}:{sx}:{sy},scale={sl_w}:{sl_h}[sl];"
     fg = (f"color=c={cv['bg']}:s={W}x{H}:r={fps}[bg];"
-          f"[0:v]setpts=PTS-STARTPTS,fps={fps},tpad=stop_mode=clone:stop_duration=1[v0];{bg}"
-          + (f"[{src}]crop={cw}:{ch}:{cx}:{cy},scale={W}:{cam_h}{cam_extra}[cam];"
-             f"[2:v]setpts=PTS-STARTPTS,fps={fps},scale={sl_w}:{sl_h},tpad=stop_mode=clone:stop_duration=1[sl];"
-             if panel else
-             f"[{src}]split=2[a][b];"
-             f"[a]crop={cw}:{ch}:{cx}:{cy},scale={W}:{cam_h}{cam_extra}[cam];"
-             f"[b]crop={sw}:{sh}:{sx}:{sy},scale={sl_w}:{sl_h}[sl];") +
+          f"[0:v]{grab()}[v0];{bg}" + slide +
           f"[bg][cam]overlay=0:{cam_y}:shortest=1[t1];[t1][sl]overlay={sl_x}:{sl_y}[t2];"
-          f"[1:v]fps={fps},format=rgba[cap];[t2][cap]overlay=0:{H - even(P['subtitles']['margin_v']) - caption[1]}:eof_action=pass[v];"
-          f"[0:a:0]aresample={AR},asetpts=PTS-STARTPTS,atrim=end_sample={ns},apad=whole_len={ns},"
-          f"afade=t=in:d={fi},afade=t=out:st={max(0, D - fo):.4f}:d={fo}[a0]")
-    return ["ffmpeg", "-v", "error", "-y", "-ss", str(c["s"]), "-t", f"{D + 0.5:.3f}", "-i", video,
-            "-f", "concat", "-safe", "0", "-i", caption[0],
-            *(["-ss", f"{panel[1]:.4f}", "-t", f"{D + 0.5:.3f}", "-i", panel[0]] if panel else []),
-            "-filter_complex", fg, "-map", "[v]", "-map", "[a0]", "-frames:v", str(nq),
-            "-c:v", "libx264", "-preset", "veryfast", "-crf", str(crf), "-pix_fmt", "yuv420p", "-r", str(fps),
-            "-c:a", "pcm_s16le", "-ar", str(AR), "-f", "mov", out]
+          f"[1:v]fps={fps},format=rgba[cap];[t2][cap]overlay=0:{H - even(P['subtitles']['margin_v']) - caption[1]}:eof_action=pass[v]")
+    extra = (["-ss", f"{panel[1]:.4f}", "-t", f"{D + 0.5:.3f}", "-i", panel[0]] if panel else
+             ["-ss", f"{c['ss']:.4f}", "-t", f"{D + 0.5:.3f}", "-i", video] if apart else [])
+    return ["ffmpeg", "-v", "error", "-y", "-ss", f"{c['s']:.4f}", "-t", f"{D + 0.5:.3f}", "-i", video,
+            "-f", "concat", "-safe", "0", "-i", caption[0], *extra,
+            "-filter_complex", fg, "-map", "[v]", "-an", "-frames:v", str(nq),
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", str(crf), "-pix_fmt", "yuv420p", "-r", str(fps), "-f", "mov", out]
+
+
+def sound_cmd(plan, nframes, P, video, out):
+    """The whole sound track: each segment's audio, exactly nq/fps long, faded in/out, joined (PCM 48 kHz)."""
+    fps, cut = P["canvas"]["fps"], P["cut"]
+    fi, fo = cut["audio_fade_in_s"], cut["audio_fade_out_s"]
+    ins, fg = [], []
+    for n, (c, nq) in enumerate(zip(plan, nframes)):
+        D = nq / fps; ns = round(D * AR)
+        ins += ["-ss", str(c["s"]), "-t", f"{D + 0.5:.3f}", "-i", video]
+        fg.append(f"[{n}:a:0]aresample={AR},asetpts=PTS-STARTPTS,atrim=end_sample={ns},apad=whole_len={ns},"
+                  f"afade=t=in:d={fi},afade=t=out:st={max(0, D - fo):.4f}:d={fo}[a{n}]")
+    fg.append("".join(f"[a{n}]" for n in range(len(plan))) + f"concat=n={len(plan)}:v=0:a=1[a]")
+    return ["ffmpeg", "-v", "error", "-y", *ins, "-filter_complex", ";".join(fg), "-map", "[a]",
+            "-c:a", "pcm_s16le", "-ar", str(AR), "-f", "wav", out]
+
+
+def blur_at(plan, t0, D):
+    """Blur boxes of the recording window [t0, t0 + D], relative to t0 (from every segment's "blur", deduplicated)."""
+    out = []
+    for c in plan:
+        for b in c.get("blur", []):
+            a, z = c["s"] + b[0], c["s"] + b[1]
+            box = [round(max(0.0, a - t0), 3), round(min(D, z - t0), 3)] + list(b[2:6])
+            if min(z, t0 + D) - max(a, t0) > 0.001 and box not in out: out.append(box)
+    return out
+
+
+def clips(plan, info, fps):
+    """plan + check_plan's info -> the picture clips: [(segment-like dict, frames, zoom, start in the final video)]."""
+    nframes = [q for q, _ in info]
+    F = jcut.frame_starts(nframes)
+    events = jcut.caption_events(plan, nframes, fps)
+    out = []
+    for p in jcut.picture(plan, nframes, fps):
+        t0, D = p["f0"] / fps, p["n"] / fps
+        s, ss = jcut.source(plan, F, p["cam"], p["f0"], fps), jcut.source(plan, F, p["sl"], p["f0"], fps)
+        ev, wt = jcut.slice_captions(events, t0, t0 + D)
+        c = {"s": s, "e": round(s + D, 6), "ev": ev, "wt": wt, "blur": blur_at(plan, s, D)}
+        if p["sl"] != p["cam"]: c["ss"], c["bs"] = ss, blur_at(plan, ss, D)
+        out.append((c, p["n"], info[p["cam"]][1], t0))
+    return out
 
 
 def clean(outdir, total):
@@ -202,16 +256,37 @@ def ready(outdir, n, h):
 
 
 def concat(outdir, total):
-    """list.txt with c00..c{total-1} and a join without re-encoding into final.mov."""
+    """list.txt with c00..c{total-1}, joined without re-encoding, plus sound.wav -> final.mov."""
     lst = os.path.join(outdir, "list.txt")
     with open(lst, "w", encoding="utf-8") as f:
         f.writelines(f"file 'c{n:02d}.mov'\n" for n in range(total))
     tmp = os.path.join(outdir, "final.mov.part")
-    r = subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", "list.txt",
-                        "-map", "0", "-c", "copy", "-f", "mov", tmp], cwd=outdir, capture_output=True, text=True)
+    r = subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", "list.txt", "-i", "sound.wav",
+                        "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "pcm_s16le", "-f", "mov", tmp],
+                       cwd=outdir, capture_output=True, text=True)
     if r.returncode:
         print("ERROR joining", r.stderr[-400:]); sys.exit(1)
     os.replace(tmp, os.path.join(outdir, "final.mov"))
+
+
+def sound(outdir, plan, info, P, video):
+    """sound.wav, redone only when the segments, fades or recording change (sound.json keeps the hash)."""
+    nframes = [q for q, _ in info]
+    st = os.stat(video)
+    h = hashlib.sha256(json.dumps({"v": VERSION, "seg": [[c["s"], q] for c, q in zip(plan, nframes)], "cut": P["cut"],
+                                   "fps": P["canvas"]["fps"], "video": [video, st.st_size, int(st.st_mtime)]},
+                                  sort_keys=True).encode()).hexdigest()
+    wav, meta = os.path.join(outdir, "sound.wav"), os.path.join(outdir, "sound.json")
+    try:
+        with open(meta, encoding="utf-8") as f:
+            if os.path.exists(wav) and json.load(f).get("hash") == h: return
+    except (OSError, ValueError):
+        pass
+    r = subprocess.run(sound_cmd(plan, nframes, P, video, wav + ".part"), capture_output=True, text=True)
+    if r.returncode:
+        print("ERROR sound", r.stderr[-400:]); sys.exit(1)
+    os.replace(wav + ".part", wav)
+    with open(meta, "w", encoding="utf-8") as f: json.dump({"hash": h}, f)
 
 
 def main(argv=None):
@@ -244,12 +319,13 @@ def main(argv=None):
     cf = P["camera_filter"][cf_mode]
     cam_extra = ("," + cf) if cf else ""
     os.makedirs(a.out, exist_ok=True)
-    clean(a.out, len(plan))
+    pics = clips(plan, info, P["canvas"]["fps"])
+    clean(a.out, len(pics))
+    sound(a.out, plan, info, P, a.video)
 
     t0 = time.time(); done = 0
-    for n, c in enumerate(plan):
-        nq, z = info[n]
-        pn = (a.panel, sum(q for q, _ in info[:n]) / P["canvas"]["fps"]) if a.panel else None
+    for n, (c, nq, z, start) in enumerate(pics):
+        pn = (a.panel, start) if a.panel else None
         h = clip_hash(c, z, P, cam_extra, a.scale, a.crf, a.video, pn)
         base = os.path.join(a.out, f"c{n:02d}")
         if ready(a.out, n, h):
@@ -267,9 +343,10 @@ def main(argv=None):
             json.dump({"hash": h, "frames": nq, "z": z}, f)
         done += 1
         print("ok", n, "%.1fs" % (time.time() - t0) + (f" zoom {z:g}x" if z > 1 else ""), flush=True)
-    print(done, "/", len(plan), "clips ready;", f"camera_filter={cf_mode}")
-    if done == len(plan):
-        concat(a.out, len(plan))
+    js = sum(1 for c in plan if c.get("j"))
+    print(done, "/", len(pics), "clips ready;", f"camera_filter={cf_mode}" + (f"; {js} J-cuts" if js else ""))
+    if done == len(pics):
+        concat(a.out, len(pics))
         print("final:", os.path.join(a.out, "final.mov"))
     else:
         print("run again to finish; final.mov only comes out with all clips")
