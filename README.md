@@ -11,7 +11,7 @@ creates it from the `profile.example/` template on the first video.
 
 | Folder | What it holds |
 |--------|---------------|
-| `src/vtk/` | Our scripts: `engine.py` (cut engine: per-word timing, fillers, repeats, punch-ins; started as a copy of the dev-video-editing skill, MIT, see `THIRD_PARTY_LICENSES.md`), `transcribe_words.py` (per-word timing, free), `cuts.py` (cuts through `engine.py` → `plan.json`), `lang.py` (spoken language: presets and detection), `jcut.py` (J-cuts: picture timeline, rules, mouth check), `render.py` (captions drawn by `captions.py`), `postaudio.py` (sound effects with `--sfx`), `sfx.py` (sound effect library and per-video list), `face.py` (frames with a neutral face for the cover), `thumb.py`, `publish.py` (publishing metadata), `preset.py` (loads a preset with inheritance). |
+| `src/vtk/` | Our scripts: `engine.py` (cut engine: per-word timing, fillers, repeats, punch-ins; started as a copy of the dev-video-editing skill, MIT, see `THIRD_PARTY_LICENSES.md`), `transcribe_words.py` (per-word timing, free), `cuts.py` (cuts through `engine.py` → `plan.json`), `lang.py` (spoken language: presets and detection), `jcut.py` (J-cuts: picture timeline, rules, mouth check), `variants.py` (one join or range rendered N ways, to compare a new cut technique side by side), `render.py` (captions drawn by `captions.py`), `postaudio.py` (sound effects with `--sfx`), `sfx.py` (sound effect library and per-video list), `face.py` (frames with a neutral face for the cover), `thumb.py`, `publish.py` (publishing metadata), `preset.py` (loads a preset with inheritance). |
 | `models/` | Transcription (487 MB) and face (3.7 MB) models, **outside git**. See below. |
 | `presets/` | Per-format parameters (layout, cuts, captions, audio, image), covers (`thumbnail.json`), fillers per language (`fillers-pt.json`, `fillers-en.json`), platform limits (`publish.json`) and the illustration example (`illustration/`). |
 | `assets/fonts/` | Poppins (captions and covers, SIL OFL 1.1, `OFL-Poppins.txt`). |
@@ -111,6 +111,20 @@ python3 src/vtk/publish.py --name <name> --video videos/<name>/final.mp4   # cov
 
 Camera image: `--camera-filter off|natural` in `render.py` (default from the preset).
 
+Testing a new cut technique: render one join (or a range of the recording) several ways and watch them side by side.
+Every output has the same frame count and audio length (checked); `<tag>_report.json` has the join's measurements.
+
+```bash
+# default variants: hard cut, punch-in 1.1, J-cut V 0.25 and 0.6 (V = voice before picture, from B's first word)
+python3 src/vtk/variants.py --preset videos/<name>/preset.json --video RECORDING.mov \
+  --plan videos/<name>/plan.json --join 2 --out videos/<name>/variants
+# your own list: any plan.json key set on the target piece (null removes it); a negative "j" is an L-cut
+#   --variants '[{"name": "hard", "j": null}, {"name": "L0.3", "j": [-0.3, "both"]}, {"name": "J-cam", "V": 0.4, "area": "camera"}]'
+#   the J-cut tests of #8 also had one area only: {"name": "J0.25-slide", "V": 0.25, "area": "slide", "z": null}
+# --range T0,T1 (recording seconds) instead of --join: each variant then names its "piece" (index in plan.json);
+#   a variant with only a name renders the range as the plan has it
+```
+
 ## Languages
 
 Supported spoken languages: Portuguese (`pt`) and English (`en`). The language picks the filler preset
@@ -154,6 +168,9 @@ presets by file name. The language must be one Parakeet TDT v3 transcribes.
 - [x] J-cuts (issue #8): sound and picture rendered apart, so a join can bring the next voice in before its picture.
   `cuts.py` refuses joins over a filler/retake, measures the mouth in the borrowed footage, picks length and area per
   join and lists candidates. Tested on 6 real joins (2026-11-19), approved by the author on the preview
+- [x] Variant render (`variants.py`, issue #10): one join or range rendered N ways to compare before building a
+  new cut technique. Reproduces the J-cut test renders of "grilling" (same join measurements, same length; the
+  0.25 s J-cut leads one frame more than the throwaway script, rounding up like `cuts.py`)
 - [x] English support: `presets/fillers-en.json`, language detection (`lang.py`) and `"lang"` override. Covered by tests; not yet used on a real English video
 - [x] Short pauses instead of deleted ones (the engine shortens them to a breath)
 - [x] Joins without audio drift: clips with PCM audio and an exact frame duration, joined by `render.py` itself

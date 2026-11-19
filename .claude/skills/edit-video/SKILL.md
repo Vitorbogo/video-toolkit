@@ -92,5 +92,8 @@ The author runs nothing: you run everything and stop at the **review checkpoints
   - One transition per join: a J-cut takes no whoosh or zoom punch-in on the same join (`cuts.py` warns about the
     zoom, `sfx.py check --plan` refuses the whoosh). A join that doesn't end a sentence is skipped.
   - Approve J-cuts on the preview, never from `edit-plan.md`: nobody can judge one from a table.
+- **A new cut technique (L-cut, a new transition...) gets a variant render watched by the author before it gets
+  code:** `variants.py` renders one join N ways (hard cut, punch-in, J/L-cut lengths) and checks they have the same
+  length. A join is judged on its ~6 s excerpt; a voice treatment still needs full previews (above).
 - **Temporary files of yours:** `.mkv`/`.mp4`, never `.mov` (the guard blocks `rm` on any `.mov`).
 - **Changed a toolkit script?** Run `.venv/bin/python -m unittest discover tests` before going on.
