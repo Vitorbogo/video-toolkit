@@ -120,7 +120,9 @@ python3 src/vtk/variants.py --preset videos/<name>/preset.json --video RECORDING
   --plan videos/<name>/plan.json --join 2 --out videos/<name>/variants
 # your own list: any plan.json key set on the target piece (null removes it); a negative "j" is an L-cut
 #   --variants '[{"name": "hard", "j": null}, {"name": "L0.3", "j": [-0.3, "both"]}, {"name": "J-cam", "V": 0.4, "area": "camera"}]'
-# --range T0,T1 (recording seconds) instead of --join: each variant then names its "piece" (index in plan.json)
+#   the J-cut tests of #8 also had one area only: {"name": "J0.25-slide", "V": 0.25, "area": "slide", "z": null}
+# --range T0,T1 (recording seconds) instead of --join: each variant then names its "piece" (index in plan.json);
+#   a variant with only a name renders the range as the plan has it
 ```
 
 ## Languages
@@ -167,7 +169,8 @@ presets by file name. The language must be one Parakeet TDT v3 transcribes.
   `cuts.py` refuses joins over a filler/retake, measures the mouth in the borrowed footage, picks length and area per
   join and lists candidates. Tested on 6 real joins (2026-11-19), approved by the author on the preview
 - [x] Variant render (`variants.py`, issue #10): one join or range rendered N ways to compare before building a
-  new cut technique. Reproduces the J-cut test renders of "grilling" (same measurements, same length)
+  new cut technique. Reproduces the J-cut test renders of "grilling" (same join measurements, same length; the
+  0.25 s J-cut leads one frame more than the throwaway script, rounding up like `cuts.py`)
 - [x] English support: `presets/fillers-en.json`, language detection (`lang.py`) and `"lang"` override. Covered by tests; not yet used on a real English video
 - [x] Short pauses instead of deleted ones (the engine shortens them to a breath)
 - [x] Joins without audio drift: clips with PCM audio and an exact frame duration, joined by `render.py` itself

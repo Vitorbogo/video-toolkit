@@ -73,6 +73,13 @@ def floor_frame(x, fps):
     return math.floor(round(x * fps, 6)) / fps
 
 
+def snap_lead(v, pre, vmax, fps):
+    """Picture lead (s, from the piece's sound start) for voice-before-picture v, with `pre` s of silence before
+    the first word: next frame up (V never less than asked; 0.05 frame of slack for "wt" kept to 3 decimals),
+    never past what the footage allows (vmax)."""
+    return min(math.ceil(round((v + pre) * fps, 6) - 0.05) / fps, floor_frame(vmax + pre, fps))
+
+
 def frame_starts(nframes):
     """First frame of each piece in the final video, plus the total: [0, n0, n0+n1, ...]."""
     F = [0]
@@ -194,9 +201,7 @@ def apply(plan, items, removed, fps, mouth=None, warnings=None, kept=(), scenes=
         if A.get("z", 1) != B.get("z", 1):
             warnings.append(f"jcut at {t:.2f} s: the zoom also changes at this join (one transition per join): "
                             "drop the zoom or the J-cut")
-        # next frame up (V never less than asked; 0.05 frame of slack for "wt" kept to 3 decimals), never past
-        # what the footage allows
-        lead = min(math.ceil(round((v + pre) * fps, 6) - 0.05) / fps, floor_frame(vmax + pre, fps))
+        lead = snap_lead(v, pre, vmax, fps)
         B["j"] = [round(lead, 6), area]
         done.append((n, round(lead - pre, 3), area, why + (f"; {note}" if note else "")))
     at = sorted(join_time(plan, n) for n, *_ in done)

@@ -2,7 +2,7 @@
 
     python3 -m unittest discover tests
 """
-import contextlib, io, json, os, shutil, sys, tempfile, unittest
+import contextlib, io, json, os, shutil, subprocess, sys, tempfile, unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src"))
@@ -39,6 +39,10 @@ class Excerpt(unittest.TestCase):
         B = variants.excerpt(PLAN, 7.0, 12.0)[0]
         self.assertNotIn("j", B)
         self.assertEqual(B["ev"], [[0.0, 1.0, "Agora outra."], [3.0, 4.9, "Fim."]])
+
+    def test_blur_after_the_clipped_end_is_dropped(self):
+        A = variants.excerpt(PLAN, 0.0, 0.9)[0]
+        self.assertNotIn("blur", A)
 
     def test_nothing_in_the_range_is_an_error(self):
         with self.assertRaises(SystemExit):
@@ -91,13 +95,31 @@ class Apply(unittest.TestCase):
         _, info = variants.apply(self.ex(), {"name": "L", "j": [-1.2, "both"]}, 1, 30)
         self.assertIn("speaking", info["skipped"])
 
+    def test_l_cut_that_crosses_the_piece_befores_own_jcut_is_skipped(self):
+        # piece 1 (1 s) keeps its own J-cut: its picture starts 0.5 s late, so an L-cut of 0.6 s on piece 2
+        # would switch to piece 2 before piece 1's picture even appears
+        plan = [{"s": 0.0, "e": 2.0, "ev": [[0.1, 1.9, "Um."]]}, {"s": 3.0, "e": 4.0, "ev": [[0.1, 0.9, "Dois."]], "j": [0.5, "both"]},
+                {"s": 5.0, "e": 8.0, "ev": [[0.2, 2.0, "Três."]]}]
+        ex = variants.excerpt(plan, 0.0, 8.0)
+        _, info = variants.apply(ex, {"name": "L", "j": [-0.6, "both"]}, 2, 30)
+        self.assertIn("picture", info["skipped"])
+        _, info = variants.apply(ex, {"name": "L", "j": [-0.3, "both"]}, 2, 30)
+        self.assertIsNone(info.get("skipped"))
+
+    def test_a_variant_without_changes_needs_no_target(self):
+        plan, info = variants.apply(self.ex(), {"name": "as-is"}, None, 30)
+        self.assertEqual(plan[1]["j"], [0.6, "both"])
+        with self.assertRaises(SystemExit):
+            variants.apply(self.ex(), {"name": "x", "z": 1.1}, None, 30)
+
     def test_raw_negative_j_is_an_l_cut(self):
         plan, info = variants.apply(self.ex(), {"name": "L", "j": [-0.3, "both"]}, 1, 30)
         self.assertEqual(plan[1]["j"], [-0.3, "both"])
         self.assertIsNone(info.get("skipped"))
 
     def test_bad_variants_are_clear_errors(self):
-        for v in ({"V": 0.2}, {"name": "a/b"}, {"name": "x", "V": 0.2, "area": "face"}, {"name": "x", "area": "camera"}):
+        for v in ({"V": 0.2}, {"name": "a/b"}, {"name": "x", "V": 0.2, "area": "face"}, {"name": "x", "area": "camera"},
+                  {"name": "x", "V": -0.2}, {"name": "x", "V": 0}, {"name": "x", "V": "long"}):
             with self.assertRaises(SystemExit):
                 variants.apply(self.ex(), v, 1, 30)
         with self.assertRaises(SystemExit):  # V needs a piece before the target
@@ -116,7 +138,6 @@ class Compare(unittest.TestCase):
 
 def frame(path, i):
     """Frame i, 45x80 gray bytes."""
-    import subprocess
     return subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-vf", f"select=eq(n\\,{i}),scale=45:80,format=gray",
                            "-frames:v", "1", "-f", "rawvideo", "-"], capture_output=True, check=True).stdout
 
@@ -131,7 +152,6 @@ class RealRender(unittest.TestCase):
             {"s": 1.6, "e": 2.6, "ev": [[0.3, 0.9, "Dois três."]], "wt": [[0.3, 0.6]]}]
 
     def setUp(self):
-        import subprocess
         from test_render import dump
         self.d = tempfile.mkdtemp(); self.addCleanup(shutil.rmtree, self.d)
         self.video = os.path.join(self.d, "g.mkv")
@@ -164,6 +184,7 @@ class RealRender(unittest.TestCase):
         self.assertEqual({(v["frames"], v["samples"]) for v in ok}, {(54, 54 * 1600)})  # A clipped to its 0.8 s + B's 1.0 s, 30 fps
         self.assertIn("skipped", rep["variants"][3])
         self.assertEqual(rep["join"]["removed_gap_s"], 0.6)
+        self.assertFalse(os.path.exists(os.path.join(self.out, "work")))  # its .mov files can't be rm'd later
         # the J-cut moves the picture: its frames differ from the hard cut's after the join
         diff = lambda i: mean_diff(*(frame(os.path.join(self.out, f), i) for f in ("t_0-hard.mkv", "t_2-J0.2.mkv")))
         self.assertLess(diff(12), 1)    # same picture before the sound join (frame 24)

@@ -14,15 +14,19 @@ the excerpt, the target: in --join mode the piece the join leads into (plan[N+1]
 plan). Every other key is set on the target as it is ("z": 1.1, "j": [-0.3, "both"] = an L-cut); null removes it.
 Shortcuts: "V" = voice-before-picture in seconds, measured from the target's first word (jcut.py's convention),
 written as "j": [lead, "area"] with "area" (default "both"). A V whose borrowed footage would reach the target's
-first word is skipped, and so is an L-cut longer than the removed gap. In --range mode the plan's own J-cuts on the
-other pieces stay as they are. Default in --join mode: hard cut, punch-in 1.1, J-cut V 0.25 and 0.6.
+first word is skipped, and so is an L-cut longer than the removed gap or a lead that leaves a piece no picture.
+Unlike cuts.py, WHY the gap was removed is not checked (filler, retake): the author is watching. A variant with only
+a name renders the excerpt as the plan has it; in --range mode the plan's own J-cuts stay on the other pieces.
+Default in --join mode: hard cut, punch-in 1.1, J-cut V 0.25 and 0.6 (add {"V": .., "area": "camera"} or "slide"
+for one area only).
 
-The excerpt is rendered by render.py, as the real video will be. Out: <tag>_<k>-<name>.mkv per variant (picture and PCM sound copied from render.py's final.mov) and
-<tag>_report.json (join measurements, picture lead, frames, audio samples). The sound is the same in every variant;
-every output must have the same frame count and audio length, or this exits with an error. Loudness
-(postaudio.py) is not applied: same for all, irrelevant to the comparison.
+The excerpt is rendered by render.py, as the real video will be. Out: <tag>_<k>-<name>.mkv per variant (picture
+and PCM sound copied from render.py's final.mov; its work/ is deleted) and <tag>_report.json (join measurements,
+picture lead, frames, audio samples). The sound is the same in every variant; every output must have the same frame
+count and audio length, or this exits with an error. Loudness (postaudio.py) is not applied: same for all,
+irrelevant to the comparison.
 """
-import argparse, copy, json, math, os, re, subprocess, sys
+import argparse, copy, json, os, re, shutil, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if os.path.join(ROOT, "src") not in sys.path:
@@ -70,8 +74,9 @@ def excerpt(plan, t0, t1):
         x["ev"], wt = _events(c, sh, d)
         if c.get("wt") is not None: x["wt"] = wt
         if c.get("blur"):
-            x["blur"] = [[round(max(0.0, b[0] - sh), 4), round(b[1] - sh, 4)] + list(b[2:]) for b in c["blur"]
-                         if b[1] - sh > 1e-6]
+            blur = [[round(max(0.0, b[0] - sh), 4), round(b[1] - sh, 4)] + list(b[2:]) for b in c["blur"]
+                    if b[1] - sh > 1e-6 and b[0] - sh < d - 1e-6]
+            if blur: x["blur"] = blur
         out.append(x)
     if not out:
         raise SystemExit(f"variants: no piece of the plan in {t0:g}-{t1:g} s of the recording")
@@ -89,13 +94,15 @@ def check_names(vs):
 
 
 def _lead_problem(plan, k, lead, fps):
-    """Why the picture lead on piece k can't be rendered, or None. An L-cut (negative lead) longer than the removed
-    gap would show the piece before still speaking under the next voice."""
+    """Why the picture lead on piece k can't be rendered, or None. The picture timeline is render.py's own
+    (jcut.picture), so the other pieces' J-cuts count too. An L-cut (negative lead) longer than the removed gap
+    would show the piece before still speaking under the next voice."""
     if k == 0: return "a J/L-cut needs a piece before the target in the excerpt"
     A, B = plan[k - 1], plan[k]
-    own, before = render.frames(B, fps), render.frames(A, fps)
-    if round(lead * fps) >= own or -round(lead * fps) >= before:
-        return f"a {lead:g} s lead leaves no picture for one of the two pieces (excerpt too short: --ctx)"
+    try:
+        jcut.picture(plan, [render.frames(c, fps) for c in plan], fps)
+    except SystemExit:
+        return f"a {lead:g} s lead leaves a piece with no picture (excerpt too short: --ctx, or a J-cut next to it)"
     if lead < 0 and -lead > B["s"] - A["e"] + 1e-6:
         return f"an L-cut of {-lead:g} s reaches past the removed gap ({B['s'] - A['e']:.2f} s): A still speaking"
     return None
@@ -103,9 +110,15 @@ def _lead_problem(plan, k, lead, fps):
 
 def apply(ex, variant, k, fps):
     """Excerpt + one variant on its piece k -> (plan for render.py, report entry). The entry has "skipped" when
-    the variant can't be rendered (a V longer than the silent footage)."""
+    the variant can't be rendered (a V longer than the silent footage). k None: a variant that changes nothing
+    (the excerpt as the plan has it)."""
     check_names([variant])
     plan = copy.deepcopy(ex)
+    if k is None:
+        if any(key != "name" for key in variant):
+            raise SystemExit(f"variants: {variant['name']}: say which piece it changes (\"piece\": index in plan.json)")
+        for c in plan: c.pop("_i", None)
+        return plan, {"name": variant["name"]}
     T = plan[k]
     info = {"name": variant["name"], "piece": T["_i"]}
     for key, val in variant.items():
@@ -123,10 +136,12 @@ def apply(ex, variant, k, fps):
         w = jcut.onset(T)
         if w is None:
             raise SystemExit(f"variants: {variant['name']}: the target piece has no word to measure V from")
-        V, pre = float(variant["V"]), w - T["s"]
-        avail = w - jcut.SPEECH_MARGIN - plan[k - 1]["e"]  # silent footage after the cut
-        # like jcut.apply: next frame up (V never less than asked), never past the silent footage
-        lead = min(math.ceil(round((V + pre) * fps, 6) - 0.05) / fps, jcut.floor_frame(avail, fps))
+        V = variant["V"]
+        if isinstance(V, bool) or not isinstance(V, (int, float)) or V <= 0:
+            raise SystemExit(f"variants: {variant['name']}: V must be seconds > 0 (an L-cut is \"j\": [-lead, area])")
+        V, pre = float(V), w - T["s"]
+        avail = silent_footage(plan[k - 1], T)
+        lead = jcut.snap_lead(V, pre, avail - pre, fps)
         T["j"] = [round(lead, 6), area]
         info.update(V=V, picture_lead_s=round(lead, 3), lead_silence_s=round(min(lead, pre), 3),
                     lead_speech_s=round(max(0.0, lead - pre), 3))
@@ -138,6 +153,11 @@ def apply(ex, variant, k, fps):
     if not info.get("skipped"): info.pop("skipped", None)
     for c in plan: c.pop("_i", None)
     return plan, info
+
+
+def silent_footage(A, B):
+    """Seconds of footage after A's end that are still before B's first word (minus jcut's margin)."""
+    return jcut.onset(B) - jcut.SPEECH_MARGIN - A["e"]
 
 
 def frame_crc(path):
@@ -180,7 +200,7 @@ def main(argv=None):
     g.add_argument("--range", help="T0,T1 in recording seconds")
     ap.add_argument("--ctx", type=float, default=CTX, help="--join: seconds of each piece around the join")
     ap.add_argument("--variants", help="JSON file or inline JSON list (default in --join mode: hard, punch-in, J-cuts)")
-    ap.add_argument("--tag", help="file name prefix (default j<N> or range)")
+    ap.add_argument("--tag", help="file name prefix (default j<N> or r<T0>-<T1>)")
     ap.add_argument("--scale", default="1.0"); ap.add_argument("--crf", default="20")
     a = ap.parse_args(argv)
 
@@ -189,15 +209,16 @@ def main(argv=None):
     vs = load_variants(a.variants)
     if a.join is not None:
         t0, t1 = join_range(plan, a.join, a.ctx); target = a.join + 1
+        tag = a.tag or f"j{a.join}"
         vs = DEFAULT if vs is None else vs
     else:
         try: t0, t1 = (float(x) for x in a.range.split(","))
         except ValueError: raise SystemExit("variants: --range T0,T1 (recording seconds)")
         target = None
+        tag = a.tag or f"r{t0:g}-{t1:g}"
         if vs is None: raise SystemExit("variants: --range needs --variants")
     check_names(vs)
     ex = excerpt(plan, t0, t1)
-    tag = a.tag or (f"j{a.join}" if a.join is not None else "range")
     out = os.path.abspath(a.out); os.makedirs(out, exist_ok=True)
 
     report = {"tag": tag, "range": [round(t0, 3), round(t1, 3)], "variants": []}
@@ -206,12 +227,12 @@ def main(argv=None):
         report["join"] = {"n": a.join, "A_end": A["e"], "B_start": B["s"], "removed_gap_s": round(B["s"] - A["e"], 3)}
         if w is not None:
             report["join"].update(pre_silence_before_B_voice_s=round(w - B["s"], 3),
-                                  silent_footage_after_A_s=round(w - jcut.SPEECH_MARGIN - A["e"], 3))
+                                  silent_footage_after_A_s=round(silent_footage(A, B), 3))
     measured = {}
     for n, v in enumerate(vs):
         i = v.get("piece", target)
         k = next((k for k, c in enumerate(ex) if c["_i"] == i), None)
-        if k is None:
+        if k is None and i is not None:
             raise SystemExit(f"variants: {v.get('name')}: piece {i} is not in the excerpt "
                              f"(pieces {[c['_i'] for c in ex]}; set \"piece\")")
         vplan, info = apply(ex, v, k, fps)
@@ -231,8 +252,10 @@ def main(argv=None):
         info["frames"], info["samples"] = measured[v["name"]] = measure(os.path.join(out, name))
     with open(os.path.join(out, f"{tag}_report.json"), "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=1)
+    shutil.rmtree(os.path.join(out, "work"), ignore_errors=True)  # render.py's .mov clips: the guard keeps .mov
     if not measured:
         raise SystemExit("variants: every variant was skipped (see the report): nothing to compare")
+    if len(measured) == 1: print("only one variant rendered: nothing to compare it with")
     errs = mismatches(measured)
     if errs:
         raise SystemExit("variants: the outputs differ in length (they must not):\n  " + "\n  ".join(errs))
